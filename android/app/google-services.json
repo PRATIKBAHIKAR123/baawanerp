@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "571163137186",
+    "firebase_url": "https://mlco-erp-default-rtdb.firebaseio.com",
+    "project_id": "mlco-erp",
+    "storage_bucket": "mlco-erp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:571163137186:android:cdc33da62bb0dfa86a73fb",
+        "android_client_info": {
+          "package_name": "com.example.mlco"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6AT5amsTaX_ymnPtobA7E9MuDzHj2y38"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
