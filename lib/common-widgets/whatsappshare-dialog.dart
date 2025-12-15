@@ -58,7 +58,7 @@ class _WhatsAppPopupState extends State<WhatsAppPopup> {
       loadSessionId();
       ledgerID = widget.invoice!['ledger_ID'];
       print('widget.invoice${widget.invoice}');
-      getInvoice();
+      // getInvoice();
       getLedgers();
       getInvoiceDescription(widget.invoiceType);
     }
@@ -142,10 +142,10 @@ class _WhatsAppPopupState extends State<WhatsAppPopup> {
   }
 
   Future<void> shareOnWhatsApp() async {
-    final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/invoice_$mobileNumber.pdf');
-    await file.writeAsBytes(pdfBytes!);
-    String shortenedUrl = encodeData();
+    // final tempDir = await getTemporaryDirectory();
+    // final file = File('${tempDir.path}/invoice_$mobileNumber.pdf');
+    // await file.writeAsBytes(pdfBytes!);
+    // String shortenedUrl = encodeData();
     final String phoneNumber = ledgerPhone.text;
 
     String invTypeText = getInvoiceDescription(widget.invoiceType);
@@ -156,7 +156,7 @@ class _WhatsAppPopupState extends State<WhatsAppPopup> {
     String amount = CurrencyFormatter.format(widget.invoice!['grandTotal']);
 
     // await shortUrl('http://104.211.141.224:5253/?print=$shortenedUrl');
-    String documentLink = shortedUrl ?? '';
+    // String documentLink = shortedUrl ?? '';
     print('shortenedUrl$shortedUrl');
 
     String text = '''
@@ -166,7 +166,6 @@ Bill Number: $billNumber
 Date: $formattedDate
 Amount: $amount
 
-Document Link: $documentLink
 '''
 //Document Link: $documentLink
         ;
@@ -184,10 +183,10 @@ Document Link: $documentLink
         whatsappUrl,
         mode: LaunchMode.externalApplication,
       );
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Invoice for $mobileNumber',
-      );
+      // await Share.shareXFiles(
+      //   [XFile(file.path)],
+      //   text: 'Invoice for $mobileNumber',
+      // );
     } catch (e) {
       print('Error sharing PDF via WhatsApp: $e');
       ScaffoldMessenger.of(context).showSnackBar(

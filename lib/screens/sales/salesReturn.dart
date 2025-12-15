@@ -32,8 +32,16 @@ class _SalesReturnScreenState extends State<SalesReturnScreen> {
   void initState() {
     super.initState();
     isValidSession();
-    fromDate = DateFormat('dd/MM/yyyy 00:00:00').format(DateTime.now());
-    toDate = DateFormat('dd/MM/yyyy 23:59:59').format(DateTime.now());
+    final now = DateTime.now();
+
+// First date of current month
+    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+
+// Today (current date)
+    final today = DateTime(now.year, now.month, now.day);
+
+    fromDate = DateFormat('dd/MM/yyyy 00:00:00').format(firstDayOfMonth);
+    toDate = DateFormat('dd/MM/yyyy 23:59:59').format(today);
     loadUserData();
   }
 

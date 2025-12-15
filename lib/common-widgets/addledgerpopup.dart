@@ -7,6 +7,7 @@ import 'package:mlco/common-widgets/gradientText.dart';
 import 'package:mlco/global/appCommon.dart';
 import 'package:mlco/global/styles.dart';
 import 'package:mlco/services/companyFetch.dart';
+import 'package:mlco/services/countryService.dart';
 import 'package:mlco/services/invoiceService.dart';
 import 'package:mlco/services/ledgerService.dart';
 import 'package:mlco/services/sessionIdFetch.dart';
@@ -37,10 +38,10 @@ class _addLedgerPopupState extends State<addLedgerPopup> {
   Map<String, dynamic>? company;
   String? currentSessionId;
   List<dynamic> salesPersons = [];
-  List<dynamic> stateList = enStateCode;
+  List<dynamic> stateList = [];
   List<String> cityList = [];
   List<String> areaList = [];
-  int stateId = 27;
+  int? stateId;
   int? salesPerson;
 
   @override
@@ -57,6 +58,7 @@ class _addLedgerPopupState extends State<addLedgerPopup> {
         currentSessionId = sessionId;
 
         getSalesPersons();
+        stateList = loadStatesForLedgerCountry(company!['country']);
         getCities('City');
         getCities('Area');
       });
@@ -80,6 +82,19 @@ class _addLedgerPopupState extends State<addLedgerPopup> {
     } catch (e) {
       print('Error: $e');
     }
+  }
+
+  static List<Map<String, dynamic>> loadStatesForLedgerCountry(
+      String countryName) {
+    final states = CountryDataService.getStatesForCountry(countryName);
+    return states.map((state) {
+      return {
+        "id": state.id,
+        "name": state.name,
+        "code": state.code,
+        "text": state.name, // same as Angular compatibility
+      };
+    }).toList();
   }
 
   getCities(columnTxt) async {

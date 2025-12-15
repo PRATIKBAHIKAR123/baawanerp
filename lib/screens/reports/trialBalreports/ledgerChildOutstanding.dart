@@ -211,6 +211,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
               tabs = groupBy(lst, 'nature') ?? [];
               _onQuickLinkTapped(tabs.first['key']);
               _isExpanded = List<bool>.filled(Invoices!.length, false);
+              _isChildExpanded = List.generate(Invoices!.length, (index) => []);
               print('_isExpanded: $_isExpanded');
             } else {
               var childdata = [];
@@ -219,19 +220,16 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
               item['isChildDataLoaded'] = true;
               item['childNodeData'] = childdata;
               if (childdata.isNotEmpty) {
-                _isChildExpanded = List.generate(
-                  growable: true,
-                  childdata.length,
-                  (index) => List<bool>.filled(childdata.length, false),
-                );
-                print('_isChildExpanded: $_isChildExpanded');
-              } else {
-                _isChildExpanded = [];
-                print('_isChildExpanded is empty');
+                int index = value.indexOf(item);
+                if (index != -1 && index < _isChildExpanded.length) {
+                  _isChildExpanded[index] =
+                      List<bool>.filled(childdata.length, false);
+                }
+                print('_isChildExpanded updated');
               }
             }
 
-            if (item['childNodeData'].isNotEmpty) {}
+            if (item != null && item['childNodeData'].isNotEmpty) {}
           } else {
             lst = [];
           }

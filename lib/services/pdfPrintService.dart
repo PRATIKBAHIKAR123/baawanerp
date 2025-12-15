@@ -207,37 +207,37 @@ class PdfPrintService {
           }
 
           // 5. Build Totals Section
-          // if (templateConfig['totalsSection'] != null) {
-          //   content.add(
-          //       _buildTotalsSection(templateConfig['totalsSection'], data));
-          // }
+          if (templateConfig['totalsSection'] != null) {
+            content.add(
+                _buildTotalsSection(templateConfig['totalsSection'], data));
+          }
 
-          // // 6. Build Grand Total Section
-          // if (templateConfig['grandTotalSection'] != null) {
-          //   content.add(_buildGrandTotalSection(
-          //       templateConfig['grandTotalSection'], data));
-          // }
+          // 6. Build Grand Total Section
+          if (templateConfig['grandTotalSection'] != null) {
+            content.add(_buildGrandTotalSection(
+                templateConfig['grandTotalSection'], data));
+          }
 
-          // content.add(pw.SizedBox(height: 10));
+          content.add(pw.SizedBox(height: 10));
 
-          // // 7. Build Footer Section
-          // if (templateConfig['footerSection'] != null) {
-          //   content.add(
-          //       _buildFooterSection(templateConfig['footerSection'], data));
-          // }
+          // 7. Build Footer Section
+          if (templateConfig['footerSection'] != null) {
+            content.add(
+                _buildFooterSection(templateConfig['footerSection'], data));
+          }
 
-          // // 8. Add Page Footer
-          // if (templateConfig['pageFooter'] != null) {
-          //   content.add(
-          //     pw.Align(
-          //       alignment: pw.Alignment.centerRight,
-          //       child: pw.Text(
-          //         templateConfig['pageFooter']['text'] ?? '',
-          //         style: pw.TextStyle(fontSize: 8),
-          //       ),
-          //     ),
-          //   );
-          // }
+          // 8. Add Page Footer
+          if (templateConfig['pageFooter'] != null) {
+            content.add(
+              pw.Align(
+                alignment: pw.Alignment.centerRight,
+                child: pw.Text(
+                  templateConfig['pageFooter']['text'] ?? '',
+                  style: pw.TextStyle(fontSize: 8),
+                ),
+              ),
+            );
+          }
 
           return content;
         },

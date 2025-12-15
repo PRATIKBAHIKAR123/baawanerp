@@ -1,11 +1,11 @@
 {
-    "name": "MLCO",
-    "short_name": "MLCO",
+    "name": "Baawan ERP",
+    "short_name": "Baawan",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#4cbb17",
-    "description": "MLCO.",
+    "description": "Baawan.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "screenshots": [
@@ -13,7 +13,7 @@
             "src": "icons/Icon-512.png",
             "sizes": "192x192",
             "type": "image/png",
-            "form_factor": "narrow",
+            "form_factor": "wide",
             "label": "Application"
         }
     ],

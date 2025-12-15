@@ -19,6 +19,7 @@ import 'package:mlco/screens/sales/salesInvoice.dart';
 import 'package:mlco/screens/sales/salesOrder.dart';
 import 'package:mlco/screens/sales/salesQuatation.dart';
 import 'package:mlco/services/announcementService.dart';
+import 'package:mlco/services/sessionCheckService.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   @override
@@ -49,6 +50,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     super.initState();
     announcemnents = Future.value([]);
     getAnnouncementData();
+    checkSessionService();
   }
 
   void getAnnouncementData() async {

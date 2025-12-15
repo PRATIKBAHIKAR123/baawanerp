@@ -162,6 +162,58 @@ Future<http.Response> itemRegisterReportListService(
   return response!;
 }
 
+Future<http.Response> itemBatchRegisterReportListService(
+    Map<String, dynamic> jsonBody) async {
+  isValidSession();
+  var url = 'https://api.baawanerp.com/api/Report/ItemBatchRegister';
+  var client = http.Client();
+  var response;
+
+  try {
+    response = await client
+        .post(
+          Uri.parse(url),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(jsonBody),
+        )
+        .timeout(const Duration(seconds: 50));
+  } catch (e) {
+    print('Error: $e');
+  } finally {
+    client.close();
+  }
+
+  return response!;
+}
+
+Future<http.Response> batchStockReportListService(
+    Map<String, dynamic> jsonBody) async {
+  isValidSession();
+  var url = 'https://api.baawanerp.com/api/Report/BatchStockSummary';
+  var client = http.Client();
+  var response;
+
+  try {
+    response = await client
+        .post(
+          Uri.parse(url),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(jsonBody),
+        )
+        .timeout(const Duration(seconds: 50));
+  } catch (e) {
+    print('Error: $e');
+  } finally {
+    client.close();
+  }
+
+  return response!;
+}
+
 Future<http.Response> salesTargetRangeListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();

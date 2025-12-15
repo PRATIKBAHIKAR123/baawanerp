@@ -11,8 +11,10 @@ import 'package:mlco/screens/masters/ledgers/items.dart';
 import 'package:mlco/screens/masters/ledgers/ledgers.dart';
 import 'package:mlco/screens/reports/Valuation.dart';
 import 'package:mlco/screens/reports/balsheetreports/ledgerChildOutstanding.dart';
+import 'package:mlco/screens/reports/batchsummaryreports/batchStockSummaryReports.dart';
 import 'package:mlco/screens/reports/dealerAnalysisReport.dart';
 import 'package:mlco/screens/reports/groupsummaryreport.dart';
+import 'package:mlco/screens/reports/itemBatchRegisterReport.dart';
 import 'package:mlco/screens/reports/itemRegisterReports/itemRegister.dart';
 import 'package:mlco/screens/reports/ledgerChildOutstandingReports/ledgerChildOutstanding.dart';
 import 'package:mlco/screens/reports/ledgerOutstandingReports/currentStock.dart';
@@ -93,9 +95,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
   logOut(context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove('userData');
-    Navigator.pushReplacement(
-      context,
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => LoginScreen()),
+      (Route<dynamic> route) => false,
     );
   }
 
@@ -751,6 +753,28 @@ class _CustomDrawerState extends State<CustomDrawer> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) => BalSheetReportScreen()),
+                          );
+                        },
+                        icon: 'assets/icons/stock valuation.png'),
+                    createSubmenuItem(
+                        text: 'Item Batch Register',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    ItemBatchRegisterReportScreen()),
+                          );
+                        },
+                        icon: 'assets/icons/stock valuation.png'),
+                    createSubmenuItem(
+                        text: 'Batch Summary',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    BatchStockSummaryReportScreen()),
                           );
                         },
                         icon: 'assets/icons/stock valuation.png'),

@@ -40,7 +40,7 @@ class _CurrentStockReportListScreenState
       fontWeight: FontWeight.w700,
       color: Color.fromRGBO(0, 0, 0, 1));
 
-  int _selectedIndex = 0;
+  int _selectedIndex = 3;
   bool isLoading = false; // Set to false for static data
 
   String userData = '';
@@ -275,28 +275,6 @@ class _CurrentStockReportListScreenState
     setState(() {
       _selectedIndex = index;
     });
-    switch (index) {
-      case 0:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => MainDashboardScreen()),
-        );
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/sales');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/purchase');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/stock');
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/account');
-        break;
-      default:
-        break;
-    }
   }
 
   void billNoChange(String bill) {
@@ -437,19 +415,19 @@ class _CurrentStockReportListScreenState
                 // ),
                 Expanded(
                   flex: 2,
-                  child: Text('ETBL', style: inter13),
+                  child: Text('HO', style: inter13),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text('KB', style: inter13),
+                  child: Text('CommHawk', style: inter13),
                 ),
+                // Expanded(
+                //   flex: 2,
+                //   child: Text('D_KB', style: inter13),
+                // ),
                 Expanded(
                   flex: 2,
-                  child: Text('D_KB', style: inter13),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text('D_BP', style: inter13),
+                  child: Text('Warehouse', style: inter13),
                 ),
                 Expanded(
                   child: Text('Total', style: inter13),
@@ -487,6 +465,7 @@ class _CurrentStockReportListScreenState
                       if (invoice['brand'] != null) {
                         brand = invoice['brand'];
                       }
+
                       return Card(
                         margin:
                             EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -757,7 +736,7 @@ class _CurrentStockReportListScreenState
                   shaderCallback: (bounds) =>
                       mlcoGradient.createShader(Offset.zero & bounds.size),
                   child: Text(
-                    '${item['ETBL']}',
+                    '${item['HO']}',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -772,7 +751,7 @@ class _CurrentStockReportListScreenState
                   shaderCallback: (bounds) =>
                       mlcoGradient.createShader(Offset.zero & bounds.size),
                   child: Text(
-                    '${item['KB']}',
+                    '${item['CommHawk']}',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -781,28 +760,28 @@ class _CurrentStockReportListScreenState
                   ),
                 ),
               ),
+              // Expanded(
+              //   flex: 2,
+              //   child: ShaderMask(
+              //     shaderCallback: (bounds) =>
+              //         mlcoGradient.createShader(Offset.zero & bounds.size),
+              //     child: Text(
+              //       '${item['D_KB']}',
+              //       style: const TextStyle(
+              //         fontSize: 13,
+              //         fontWeight: FontWeight.w600,
+              //         color: Colors.white,
+              //       ),
+              //     ),
+              //   ),
+              // ),
               Expanded(
                 flex: 2,
                 child: ShaderMask(
                   shaderCallback: (bounds) =>
                       mlcoGradient.createShader(Offset.zero & bounds.size),
                   child: Text(
-                    '${item['D_KB']}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: ShaderMask(
-                  shaderCallback: (bounds) =>
-                      mlcoGradient.createShader(Offset.zero & bounds.size),
-                  child: Text(
-                    '${item['D_BP']}',
+                    '${item['Warehouse']}',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

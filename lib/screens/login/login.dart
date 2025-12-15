@@ -9,6 +9,8 @@ import 'package:mlco/services/loginService.dart';
 import 'package:mlco/services/syncService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
+import '../../common-widgets/pwaInstall.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -35,6 +37,12 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     super.initState();
     _loadUserList();
     WidgetsBinding.instance.addObserver(this);
+    // Show PWA install prompt on login screen if running on web
+    // if (kIsWeb) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     showPwaInstallPrompt();
+    //   });
+    // }
     // _nameFocusNode.addListener(() {
     //   if (_nameFocusNode.hasFocus) {
     //     Future.delayed(Duration(seconds: 10), _showOverlay());

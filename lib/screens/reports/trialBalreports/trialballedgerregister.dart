@@ -456,11 +456,9 @@ class _TrialBalLedgerRegisterReportState
                                   onTap: () {
                                     add(invoice);
                                   },
-                                  child: Image.asset(
-                                    'assets/icons/icons8-eye-48.png',
-                                    height: 24,
-                                    width: 24,
-                                    color: mlco_green,
+                                  child: Icon(
+                                    Icons.remove_red_eye_sharp,
+                                    color: Colors.green,
                                   ),
                                 ),
                               ],

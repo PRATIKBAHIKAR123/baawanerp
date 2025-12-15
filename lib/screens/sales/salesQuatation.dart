@@ -37,7 +37,7 @@ class _SalesQuotationScreenState extends State<SalesQuotationScreen> {
   @override
   void initState() {
     super.initState();
-    fromDate = DateFormat('dd/MM/yyyy 00:00:00').format(DateTime.now());
+    fromDate = DateFormat('dd/MM/yyyy 00:00:00').format(firstDayOfMonth);
     toDate = DateFormat('dd/MM/yyyy 23:59:59').format(DateTime.now());
     loadUserData();
   }

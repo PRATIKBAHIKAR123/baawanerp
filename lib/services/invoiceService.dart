@@ -378,7 +378,7 @@ Future<http.Response> dropdownService(Map<String, dynamic> jsonBody) async {
 }
 
 Future<http.Response> distinctService(Map<String, dynamic> jsonBody) async {
-  isValidSession();
+  await isValidSession();
   var url = 'https://api.baawanerp.com/api/Common/Distinct';
   var client = http.Client();
   var response;

@@ -6,6 +6,7 @@ import 'package:mlco/screens/dashboard/maindashboard.dart';
 import 'package:mlco/screens/dealer/dashboard/dealerdashboard.dart';
 import 'package:mlco/screens/infoInit/insightsStartupScreen.dart';
 import 'package:mlco/screens/login/login.dart';
+import 'package:mlco/services/countryService.dart';
 import 'package:mlco/services/navigationservice.dart';
 import 'package:mlco/services/sessionCheckService.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +16,11 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // PWAInstall().setup(installCallback: () {
+  //   debugPrint('APP INSTALLED!');
+  // });
   await CurrencyFormatter.init();
+  await CountryDataService.loadCountriesData();
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       databaseURL: 'https://mlco-erp-default-rtdb.firebaseio.com',

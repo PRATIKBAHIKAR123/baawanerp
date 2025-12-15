@@ -13,6 +13,7 @@ import 'package:mlco/layouts/mlcoappbar.dart';
 import 'package:mlco/layouts/mlcodrawer.dart';
 import 'package:mlco/screens/sales/salesQuatation.dart';
 import 'package:mlco/services/companyFetch.dart';
+import 'package:mlco/services/countryService.dart';
 import 'package:mlco/services/invoiceService.dart';
 import 'package:mlco/services/itemService.dart';
 import 'package:mlco/services/ledgerService.dart';
@@ -41,7 +42,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
   int formStep = 1;
   List<dynamic> stockPlaceList = [];
   List<dynamic> salesPersons = [];
-  List<dynamic> stateList = enStateCode;
+  List<dynamic> stateList = [];
   List<dynamic> priceCatList = [];
   int invTypeID = 4;
   int? ledgerId;
@@ -51,10 +52,10 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
   Map<String, dynamic>? salesPerson;
   String? currentSessionId;
   Map<String, dynamic>? ledgerObject;
-  int stateId = 27;
+  int? stateId;
   String? priceCategoryTxt;
   String? stockPlaceTxt;
-  String stateTxt = 'Maharashtra';
+  String stateTxt = '';
   Map<String, dynamic>? company;
 
   int quantity = 0;
@@ -101,6 +102,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
         currentSessionId = sessionId;
         getSetupInfoData();
         getSalesPersons();
+        stateList = loadStatesForLedgerCountry(company!['country']);
       });
       print('Loaded currentSessionId: $sessionId');
     } else {
@@ -182,6 +184,19 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
           .first;
       //stateId = stateList.where((sp) => sp['id'] == ledger['state']).first;
     });
+  }
+
+  static List<Map<String, dynamic>> loadStatesForLedgerCountry(
+      String countryName) {
+    final states = CountryDataService.getStatesForCountry(countryName);
+    return states.map((state) {
+      return {
+        "id": state.id,
+        "name": state.name,
+        "code": state.code,
+        "text": state.name, // same as Angular compatibility
+      };
+    }).toList();
   }
 
   void billNoChange(String bill) {}
