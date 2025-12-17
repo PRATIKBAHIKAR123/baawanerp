@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -64,9 +65,9 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
   List<Map<String, dynamic>> Invoices = [];
   List<Map<String, dynamic>> value = [];
   Map<String, dynamic> income = {};
-  bool showOpeningBal = false;
-  bool showDebit = false;
-  bool showCredit = false;
+  bool showOpeningBal = true;
+  bool showDebit = true;
+  bool showCredit = true;
   bool salesAccountsLoaded = false;
   bool directIncomesLoaded = false;
   bool indirectIncomesLoaded = false;
@@ -89,8 +90,6 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
   @override
   void initState() {
     super.initState();
-    getGroups();
-
     mainTabs = [];
     _tabController = TabController(length: mainTabs.length + 1, vsync: this);
     fromDate = DateFormat('dd/MM/yyyy HH:mm:ss').format(firstDayOfMonth);
@@ -108,6 +107,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
   }
 
   void loadUserData() async {
+    await getGroups(); // Wait for groups to load first
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userDataString = prefs.getString('userData');
 
@@ -121,7 +121,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
             this.currentSessionId = currentSessionId;
           });
           print('Loaded currentSessionId: $currentSessionId');
-          getList(null); // Call getList() after loading user data
+          getList(null); // Call getList() after loading user data and groups
         } else {
           print('currentSessionId is null or not found in userData');
         }
@@ -142,6 +142,93 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
           .toList();
     }
     setState(() {}); // Trigger a rebuild to update the UI
+  }
+
+  // Helper function to determine Dr/Cr based on group nature and sign
+  Map<String, dynamic> _formatDrCr(double amount, bool isCreditNature) {
+    if (amount == 0) {
+      return {'value': 0.0, 'type': ''};
+    }
+
+    if (isCreditNature) {
+      // Liabilities / Capital / Sales (isCr = true)
+      return amount >= 0
+          ? {'value': amount.abs(), 'type': 'Cr'}
+          : {'value': amount.abs(), 'type': 'Dr'};
+    } else {
+      // Assets / Expenses / Purchases (isCr = false)
+      return amount >= 0
+          ? {'value': amount.abs(), 'type': 'Dr'}
+          : {'value': amount.abs(), 'type': 'Cr'};
+    }
+  }
+
+// Main processing function
+  void _processTrialBalanceItem(
+      Map<String, dynamic> item, Map<String, dynamic> group) {
+    if (group['isCr'] == null) {
+      print(
+          'processTrialBalanceItem: Missing or invalid group info for item: $item, group: $group');
+      item['nature'] = 'Others';
+      // Set default values to avoid null errors, assuming debit nature
+      bool isCr = false;
+      double opening = (item['OPENINGBAL'] ?? 0.0).toDouble();
+      double debit = (item['DEBIT'] ?? 0.0).toDouble();
+      double credit = (item['CREDIT'] ?? 0.0).toDouble();
+      double closing = opening + debit - credit;
+
+      var openingDisplay = _formatDrCr(opening, isCr);
+      var closingDisplay = _formatDrCr(closing, isCr);
+
+      item['processedOpeningBalance'] = openingDisplay['value'];
+      item['openingDrCr'] = openingDisplay['type'];
+      item['processedDebit'] = debit.abs();
+      item['processedCredit'] = credit.abs();
+      item['processedClosingBalance'] = closingDisplay['value'];
+      item['closingDrCr'] = closingDisplay['type'];
+      item['originalOpeningBalance'] = opening;
+      item['originalClosingBalance'] = closing;
+      item['groupInfo'] = group;
+      return;
+    }
+
+    bool isCr = group['isCr'] as bool;
+
+    // Step 1: Get raw signed values from API
+    double opening = (item['OPENINGBAL'] ?? 0.0).toDouble();
+    double debit = (item['DEBIT'] ?? 0.0).toDouble();
+    double credit = (item['CREDIT'] ?? 0.0).toDouble();
+
+    // Step 2: Calculate closing balance based on group nature
+    double closing;
+    if (isCr) {
+      // Credit nature: opening - debit + credit = closing
+      closing = opening - debit + credit;
+    } else {
+      // Debit nature: opening + debit - credit = closing
+      closing = opening + debit - credit;
+    }
+
+    // Step 3: Determine Dr/Cr for display
+    var openingDisplay = _formatDrCr(opening, isCr);
+    var closingDisplay = _formatDrCr(closing, isCr);
+
+    // Step 4: Store values for display
+    item['processedOpeningBalance'] = openingDisplay['value'];
+    item['openingDrCr'] = openingDisplay['type'];
+
+    item['processedDebit'] = debit.abs();
+    item['processedCredit'] = credit.abs();
+
+    item['processedClosingBalance'] = closingDisplay['value'];
+    item['closingDrCr'] = closingDisplay['type'];
+
+    // Store original signed values for reference
+    item['originalOpeningBalance'] = opening;
+    item['originalDebit'] = debit;
+    item['originalCredit'] = credit;
+    item['originalClosingBalance'] = closing;
+    item['groupInfo'] = group; // Store group info for later use in totals
   }
 
   getList(item) async {
@@ -169,26 +256,40 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
       var decodedData = jsonDecode(response.body);
       if (response.statusCode == 200) {
         setState(() {
-          Invoices = List<Map<String, dynamic>>.from(decodedData);
-          if (Invoices.isNotEmpty) {
-            for (var v in Invoices) {
-              if (v['ISGROUP'] != null && v['ISGROUP']) {
-                var rec = grpList.firstWhere(
-                  (x) => x['id'] == v['ID'],
-                  orElse: () => <String, dynamic>{},
+          var data = List<Map<String, dynamic>>.from(decodedData);
+
+          if (data.isNotEmpty) {
+            for (var v in data) {
+              Map<String, dynamic> group = {};
+              if (v['ISGROUP'] == true) {
+                group = grpList.firstWhere(
+                  (g) => g['id'].toString() == v['ID'].toString(),
+                  orElse: () => {},
                 );
-                if (rec != null) {
-                  if (rec['nature'] == 2 || rec['nature'] == 3) {
+              } else {
+                var groupId = v['groupId'] ?? v['parentId'];
+                if (groupId != null) {
+                  group = grpList.firstWhere(
+                    (g) => g['id'].toString() == groupId.toString(),
+                    orElse: () => {},
+                  );
+                }
+              }
+
+              if (group.isNotEmpty) {
+                 if (group['nature'] == 2 || group['nature'] == 3) {
                     v['nature'] = 'Liabilities';
-                  } else if (rec['nature'] == 1 || rec['nature'] == 4) {
+                  } else if (group['nature'] == 1 || group['nature'] == 4) {
                     v['nature'] = 'Assets';
                   }
-                }
+                _processTrialBalanceItem(v, group);
+              } else {
+                 _processTrialBalanceItem(v, {});
               }
             }
 
             // Sort the data so Liabilities come first
-            Invoices.sort((a, b) {
+            data.sort((a, b) {
               if (a['nature'] == 'Liabilities' && b['nature'] == 'Assets') {
                 return -1;
               }
@@ -199,39 +300,35 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
             });
 
             if (item == null) {
-              lst = Invoices;
-              netAmount = lst.fold(
-                0.0,
-                (sum, obj) =>
-                    sum +
-                    (obj['OPENINGBAL'] ?? 0) +
-                    (obj['DEBIT'] ?? 0) +
-                    (obj['CREDIT'] ?? 0),
-              );
+              lst = data;
+              netAmount = getNetAmount(lst);
               tabs = groupBy(lst, 'nature') ?? [];
-              _onQuickLinkTapped(tabs.first['key']);
-              _isExpanded = List<bool>.filled(Invoices!.length, false);
-              _isChildExpanded = List.generate(Invoices!.length, (index) => []);
-              print('_isExpanded: $_isExpanded');
+              if (tabs.isNotEmpty) {
+                _onQuickLinkTapped(tabs.first['key']);
+              } else {
+                value = [];
+              }
+              _isExpanded = List<bool>.filled(lst.length, false);
+              _isChildExpanded = List.generate(lst.length, (index) => []);
             } else {
-              var childdata = [];
-              childdata = Invoices;
-              print('childdata$childdata');
               item['isChildDataLoaded'] = true;
-              item['childNodeData'] = childdata;
-              if (childdata.isNotEmpty) {
+              item['childNodeData'] = data;
+              if (data.isNotEmpty) {
                 int index = value.indexOf(item);
                 if (index != -1 && index < _isChildExpanded.length) {
                   _isChildExpanded[index] =
-                      List<bool>.filled(childdata.length, false);
+                      List<bool>.filled(data.length, false);
                 }
-                print('_isChildExpanded updated');
               }
             }
-
-            if (item != null && item['childNodeData'].isNotEmpty) {}
           } else {
-            lst = [];
+            if (item == null) {
+              lst = [];
+              tabs = [];
+              value = [];
+            } else {
+              item['childNodeData'] = [];
+            }
           }
           isLoading = false;
         });
@@ -258,6 +355,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
     }
   }
 
+
   toggleItem(item) {
     print('item$item');
     if (item['ISGROUP']) {
@@ -277,6 +375,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
   }
 
   void _onQuickLinkTapped(id) {
+    if (id == null) return;
     print(id);
 
     setState(() {
@@ -393,13 +492,71 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
     }
   }
 
-  double getNetAmount(List<Map<String, dynamic>> lst) {
-    double sumOpeningBal =
-        lst.fold(0.0, (sum, obj) => sum + (obj['OPENINGBAL'] ?? 0.0));
-    double sumDebit = lst.fold(0.0, (sum, obj) => sum + (obj['DEBIT'] ?? 0.0));
-    double sumCredit =
-        lst.fold(0.0, (sum, obj) => sum + (obj['CREDIT'] ?? 0.0));
-    return sumOpeningBal + sumDebit + sumCredit;
+  double _getNetAmountWithSign(List<dynamic> list) {
+    if (list == null) return 0.0;
+    return list.fold(0.0, (sum, obj) {
+      return sum + (obj['originalClosingBalance'] ?? 0.0);
+    });
+  }
+
+  double getTotalProcessedOpeningBalance(List<dynamic> list) {
+    if (list == null) return 0.0;
+    double totalOpening = list.fold(0.0, (sum, obj) => sum + (obj['originalOpeningBalance'] ?? 0.0));
+    return totalOpening.abs();
+  }
+
+  double getTotalProcessedDebit(List<dynamic> list) {
+    if (list == null) return 0.0;
+    return list.fold(0.0, (sum, obj) => sum + (obj['processedDebit'] ?? 0.0));
+  }
+
+  double getTotalProcessedCredit(List<dynamic> list) {
+    if (list == null) return 0.0;
+    return list.fold(0.0, (sum, obj) => sum + (obj['processedCredit'] ?? 0.0));
+  }
+
+  double getNetAmount(List<dynamic> list) {
+    if (list == null) return 0.0;
+    return _getNetAmountWithSign(list).abs();
+  }
+
+  String _getOpeningDrCrForGroup(List<dynamic> list) {
+    if (list == null || list.isEmpty) return '';
+
+    var firstItem = list.first;
+    var groupInfo = firstItem['groupInfo'];
+
+    if (groupInfo == null || groupInfo['isCr'] == null) {
+      return '';
+    }
+
+    bool isCr = groupInfo['isCr'] as bool;
+    double totalOpening = list.fold(
+        0.0, (sum, obj) => sum + (obj['originalOpeningBalance'] ?? 0.0));
+
+    var display = _formatDrCr(totalOpening, isCr);
+    return display['type'];
+  }
+
+  String _getClosingDrCrForGroup(List<dynamic> list) {
+    if (list == null || list.isEmpty) return '';
+
+    var firstItem = list.first;
+    var groupInfo = firstItem['groupInfo'];
+    if (groupInfo == null || groupInfo['isCr'] == null) {
+       for (var item in list) {
+        if (item['groupInfo'] != null && item['groupInfo']['isCr'] != null) {
+          bool isCr = item['groupInfo']['isCr'] as bool;
+          double netAmount = _getNetAmountWithSign(list);
+          return _formatDrCr(netAmount, isCr)['type'];
+        }
+      }
+      return ''; // Fallback
+    }
+
+    bool isCr = groupInfo['isCr'] as bool;
+    double netAmount = _getNetAmountWithSign(list);
+    return _formatDrCr(netAmount, isCr)['type'];
   }
 
   @override
@@ -573,7 +730,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
           height: 10,
         ),
         if (selectedParent == selectedParent) ...[
-          if (Invoices == null || Invoices!.isEmpty)
+          if (value == null || value!.isEmpty)
             !isLoading ? noRecordsFound() : Container(),
           isLoading
               ? Center(
@@ -595,11 +752,6 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                           mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Text(
-                            //   '${formattedDate} ',
-                            //   style: inter400,
-                            // ),
-
                             SizedBox(
                               height: 6,
                             ),
@@ -630,7 +782,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                   Expanded(
                                     flex: 4,
                                     child: Text(
-                                      '₹${formatAmount(invoice['OPENINGBAL'])}',
+                                      '${CurrencyFormatter.format(invoice['processedOpeningBalance'] ?? 0.0)} ${invoice['openingDrCr'] ?? ''}',
                                       style: inter400,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -666,7 +818,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                   Expanded(
                                     flex: 4,
                                     child: Text(
-                                      '₹${formatAmount(invoice['DEBIT'])}',
+                                      '${CurrencyFormatter.format(invoice['processedDebit'] ?? 0.0)}',
                                       style: inter400,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -701,7 +853,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                   Expanded(
                                     flex: 4,
                                     child: Text(
-                                      '₹${formatAmount(invoice['CREDIT'])}',
+                                      '${CurrencyFormatter.format(invoice['processedCredit'] ?? 0.0)}',
                                       style: inter400,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -711,7 +863,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                             SizedBox(
                               height: 2,
                             ),
-                            if (_isExpanded[index] &&
+                            if (_isExpanded.length > index && _isExpanded[index] &&
                                 invoice['childNodeData'] != null) ...[
                               Container(
                                   height: 120,
@@ -740,8 +892,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                                   customHeader(
                                                       childindex,
                                                       groupchildData,
-                                                      _isChildExpanded[index]
-                                                          [childindex],
+                                                        _isChildExpanded.length > index && _isChildExpanded[index] != null && _isChildExpanded[index].length > childindex ? _isChildExpanded[index][childindex] : false,
                                                       "child"),
                                                   if (showOpeningBal)
                                                     Row(
@@ -775,7 +926,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                                         Expanded(
                                                           flex: 4,
                                                           child: Text(
-                                                            '₹${formatAmount(groupchildData['OPENINGBAL'])}',
+                                                            '${CurrencyFormatter.format(groupchildData['processedOpeningBalance'] ?? 0.0)} ${groupchildData['openingDrCr'] ?? ''}',
                                                             style: inter400,
                                                             overflow:
                                                                 TextOverflow
@@ -819,7 +970,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                                         Expanded(
                                                           flex: 4,
                                                           child: Text(
-                                                            '₹${formatAmount(groupchildData['DEBIT'])}',
+                                                            '${CurrencyFormatter.format(groupchildData['processedDebit'] ?? 0.0)}',
                                                             style: inter400,
                                                             overflow:
                                                                 TextOverflow
@@ -863,7 +1014,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                                         Expanded(
                                                           flex: 4,
                                                           child: Text(
-                                                            '₹${formatAmount(groupchildData['CREDIT'])}',
+                                                            '${CurrencyFormatter.format(groupchildData['processedCredit'] ?? 0.0)}',
                                                             style: inter400,
                                                             overflow:
                                                                 TextOverflow
@@ -872,7 +1023,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                                         ),
                                                       ],
                                                     ),
-                                                  if (_isChildExpanded[index]
+                                                  if (_isChildExpanded.length > index &&_isChildExpanded[index]
                                                       [childindex]) ...[
                                                     SingleChildScrollView(
                                                       child: Column(
@@ -984,7 +1135,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                                                               4,
                                                                           child:
                                                                               Text(
-                                                                            '₹${formatAmount(childgroupchildData['OPENINGBAL'])}',
+                                                                            '${CurrencyFormatter.format(childgroupchildData['processedOpeningBalance'] ?? 0.0)} ${childgroupchildData['openingDrCr'] ?? ''}',
                                                                             style:
                                                                                 inter400,
                                                                             overflow:
@@ -1034,7 +1185,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                                                               4,
                                                                           child:
                                                                               Text(
-                                                                            '₹${formatAmount(childgroupchildData['DEBIT'])}',
+                                                                            '${CurrencyFormatter.format(childgroupchildData['processedDebit'] ?? 0.0)}',
                                                                             style:
                                                                                 inter400,
                                                                             overflow:
@@ -1084,7 +1235,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                                                                               4,
                                                                           child:
                                                                               Text(
-                                                                            '₹${formatAmount(childgroupchildData['CREDIT'])}',
+                                                                            '${CurrencyFormatter.format(childgroupchildData['processedCredit'] ?? 0.0)}',
                                                                             style:
                                                                                 inter400,
                                                                             overflow:
@@ -1138,7 +1289,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                   Expanded(
                     flex: 6,
                     child: Text(
-                      '₹${formatAmount(item['OPENINGBAL'] + item['DEBIT'] + item['CREDIT'])}',
+                      '${CurrencyFormatter.format(item['processedClosingBalance'] ?? 0.0)} ${item['closingDrCr'] ?? ''}',
                       style: inter600,
                     ),
                   ),
@@ -1158,14 +1309,10 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                   if (type == "parent") {
                     if (index < _isExpanded.length) {
                       _isExpanded[index] = !_isExpanded[index];
-                      // _isChildExpanded[index] = List<bool>.filled(
-                      //   item['childNodeData']?.length ?? 0,
-                      //   false,
-                      // );
                     }
                   } else {
                     final parentIndex = _isExpanded.indexOf(true);
-                    if (parentIndex < _isChildExpanded.length &&
+                    if (parentIndex !=-1 && parentIndex < _isChildExpanded.length &&
                         index < _isChildExpanded[parentIndex].length) {
                       _isChildExpanded[parentIndex][index] =
                           !_isChildExpanded[parentIndex][index];
@@ -1223,16 +1370,9 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
       fontWeight: FontWeight.w600,
       fontSize: 14,
     );
-
-    final TextStyle inter13_w600 = GoogleFonts.inter(
-      color: Color.fromRGBO(255, 255, 255, 1),
-      fontWeight: FontWeight.w600,
-      fontSize: 14,
-    );
-    final formattedTotal = CurrencyFormatter.format(totalamount);
+    
     return Container(
       padding: EdgeInsets.all(16),
-      //height: 120,
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(gradient: mlcoGradient),
       child: BottomSheet(
@@ -1248,8 +1388,8 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                   Expanded(
                     flex: 2,
                     child: Text(
-                      'Total',
-                      style: inter600,
+                      'Total Closing',
+                      style: inter14_w600,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -1257,14 +1397,14 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                     flex: 1,
                     child: Text(
                       ':',
-                      style: inter600,
+                      style: inter14_w600,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Expanded(
                     flex: 4,
                     child: Text(
-                      '₹${formatAmount(getNetAmount(value))}',
+                      '${CurrencyFormatter.format(getNetAmount(lst))} ${_getClosingDrCrForGroup(lst)}',
                       style: inter14_w600,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1279,8 +1419,8 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                     Expanded(
                       flex: 2,
                       child: Text(
-                        'Opening Balance',
-                        style: inter600,
+                        'Total Opening',
+                        style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -1288,14 +1428,14 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                       flex: 1,
                       child: Text(
                         ':',
-                        style: inter600,
+                        style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Expanded(
                       flex: 4,
                       child: Text(
-                        '₹${sumOfArrayProperty(value, 'OPENINGBAL')}',
+                        '${CurrencyFormatter.format(getTotalProcessedOpeningBalance(lst))} ${_getOpeningDrCrForGroup(lst)}',
                         style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1313,8 +1453,8 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                     Expanded(
                       flex: 2,
                       child: Text(
-                        'Debit',
-                        style: inter600,
+                        'Total Debit',
+                        style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -1322,14 +1462,14 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                       flex: 1,
                       child: Text(
                         ':',
-                        style: inter600,
+                        style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Expanded(
                       flex: 4,
                       child: Text(
-                        '₹${sumOfArrayProperty(value, 'DEBIT')}',
+                        '${CurrencyFormatter.format(getTotalProcessedDebit(lst))}',
                         style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1347,8 +1487,8 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                     Expanded(
                       flex: 2,
                       child: Text(
-                        'Credit',
-                        style: inter600,
+                        'Total Credit',
+                        style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -1356,14 +1496,14 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                       flex: 1,
                       child: Text(
                         ':',
-                        style: inter600,
+                        style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Expanded(
                       flex: 4,
                       child: Text(
-                        '₹${sumOfArrayProperty(value, 'CREDIT')}',
+                        '${CurrencyFormatter.format(getTotalProcessedCredit(lst))}',
                         style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1383,7 +1523,6 @@ String formatAmountforString(double amount) {
     final NumberFormat numberFormat = NumberFormat("#,##,##0.00", "en_IN");
     return numberFormat.format(amount);
   } catch (e) {
-    return amount.toString() ??
-        '00.0'; // Return the original value if parsing fails
+    return amount.toString();
   }
 }

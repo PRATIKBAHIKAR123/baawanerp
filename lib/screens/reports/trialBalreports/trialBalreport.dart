@@ -11,6 +11,7 @@ import 'package:mlco/global/utils.dart';
 import 'package:mlco/layouts/backbuttonappbar.dart';
 import 'package:mlco/layouts/mlcodrawer.dart';
 import 'package:mlco/screens/dashboard/maindashboard.dart';
+import 'package:mlco/screens/reports/groupsummaryreport.dart';
 import 'package:mlco/screens/reports/trialBalreports/trialballedgerregister.dart';
 import 'package:mlco/services/reportdownloadservice.dart';
 import 'package:mlco/services/reportsService.dart';
@@ -176,18 +177,41 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
           Invoices = List<Map<String, dynamic>>.from(decodedData);
 
           if (Invoices.isNotEmpty) {
+            var parentGroup = item != null ? item['groupInfo'] : null;
             for (var v in Invoices) {
               if (v['ISGROUP'] != null && v['ISGROUP']) {
                 var rec = grpList.firstWhere(
                   (x) => x['id'] == v['ID'],
                   orElse: () => <String, dynamic>{},
                 );
-                if (rec != null) {
+                if (rec.isNotEmpty) {
                   if (rec['nature'] == 2 || rec['nature'] == 3) {
                     v['nature'] = 'Liabilities';
                   } else if (rec['nature'] == 1 || rec['nature'] == 4) {
                     v['nature'] = 'Assets';
                   }
+                  v['groupInfo'] = rec;
+                  processTrialBalanceItem(v, rec);
+                }
+              } else {
+                // For non-group items (ledgers), find parent group
+                var group = parentGroup;
+                if (group == null && v['groupId'] != null) {
+                  group = grpList.firstWhere((x) => x['id'] == v['groupId'],
+                      orElse: () => {});
+                }
+                if (group != null && group.isNotEmpty) {
+                  // Propagate nature from parent group so grouping/sorting matches Angular
+                  if (group['nature'] == 2 || group['nature'] == 3) {
+                    v['nature'] = 'Liabilities';
+                  } else if (group['nature'] == 1 || group['nature'] == 4) {
+                    v['nature'] = 'Assets';
+                  }
+                  v['groupInfo'] = group;
+                  processTrialBalanceItem(v, group);
+                } else {
+                  // Fallback or error
+                  processTrialBalanceItem(v, {});
                 }
               }
             }
@@ -205,44 +229,31 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
 
             if (item == null) {
               lst = Invoices;
-              netAmount = lst.fold(
-                0.0,
-                (sum, obj) =>
-                    sum +
-                    (obj['OPENINGBAL'] ?? 0) +
-                    (obj['DEBIT'] ?? 0) +
-                    (obj['CREDIT'] ?? 0),
-              );
+              netAmount = getNetAmount(lst);
               tabs = groupBy(lst, 'nature') ?? [];
-              _onQuickLinkTapped(tabs.first['key']);
-              _isExpanded = List<bool>.filled(Invoices!.length, false);
-              print('_isExpanded: $_isExpanded');
+              if (tabs.isNotEmpty) {
+                _onQuickLinkTapped(tabs.first['key']);
+              }
+              _isExpanded = List<bool>.filled(Invoices.length, false);
             } else {
               final List<UpdateAddressModel> fetchedItems =
                   updateAddressModelFromJson(Invoices);
               expandedItems[item.id] = fetchedItems;
-              var childdata = [];
-              childdata = Invoices;
-              print('childdata$childdata');
               item['isChildDataLoaded'] = true;
-              item['childNodeData'] = childdata;
-              if (childdata.isNotEmpty) {
+              item['childNodeData'] = Invoices;
+              if (Invoices.isNotEmpty) {
                 _isChildExpanded = List.generate(
                   growable: true,
-                  childdata.length,
+                  Invoices.length,
                   (index) => List<bool>.filled(
-                      item['childNodeData'] != null ? childdata.length : 0,
+                      item['childNodeData'] != null ? Invoices.length : 0,
                       false,
                       growable: true),
                 );
-                print('_isChildExpanded: $_isChildExpanded');
               } else {
                 _isChildExpanded = [];
-                print('_isChildExpanded is empty');
               }
             }
-
-            if (item['childNodeData'].isNotEmpty) {}
           } else {
             lst = [];
           }
@@ -408,13 +419,301 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
     }
   }
 
+  double getNetAmountWithSign(List<Map<String, dynamic>> lst) {
+    if (lst == null) return 0.0;
+
+    return lst.fold(0.0, (sum, obj) {
+      // Use calculated closing when available
+      if (obj['originalClosingBalance'] != null) {
+        return sum + (obj['originalClosingBalance'] as num).toDouble();
+      }
+
+      // Fallback: calculate from raw values based on group nature (matches Angular)
+      final opening =
+          (obj['originalOpeningBalance'] ?? obj['OPENINGBAL'] ?? 0.0)
+              .toDouble();
+      final debit = (obj['originalDebit'] ?? obj['DEBIT'] ?? 0.0).toDouble();
+      final credit = (obj['originalCredit'] ?? obj['CREDIT'] ?? 0.0).toDouble();
+      final groupInfo = obj['groupInfo'];
+      final isCr = groupInfo != null ? groupInfo['isCr'] : obj['isCr'];
+
+      if (isCr == true) {
+        return sum + (opening - debit + credit);
+      } else if (isCr == false) {
+        return sum + (opening + debit - credit);
+      }
+
+      return sum + (opening + debit + credit);
+    });
+  }
+
   double getNetAmount(List<Map<String, dynamic>> lst) {
-    double sumOpeningBal =
-        lst.fold(0.0, (sum, obj) => sum + (obj['OPENINGBAL'] ?? 0.0));
-    double sumDebit = lst.fold(0.0, (sum, obj) => sum + (obj['DEBIT'] ?? 0.0));
-    double sumCredit =
-        lst.fold(0.0, (sum, obj) => sum + (obj['CREDIT'] ?? 0.0));
-    return sumOpeningBal + sumDebit + sumCredit;
+    return getNetAmountWithSign(lst).abs();
+  }
+
+  Map<String, dynamic> formatDrCr(double amount, bool isCreditNature) {
+    if (amount == 0) {
+      return {'value': 0.0, 'type': ''};
+    }
+    if (isCreditNature) {
+      return amount >= 0
+          ? {'value': amount.abs(), 'type': 'Cr'}
+          : {'value': amount.abs(), 'type': 'Dr'};
+    } else {
+      return amount >= 0
+          ? {'value': amount.abs(), 'type': 'Dr'}
+          : {'value': amount.abs(), 'type': 'Cr'};
+    }
+  }
+
+  void processTrialBalanceItem(
+      Map<String, dynamic> item, Map<String, dynamic> group) {
+    // Resolve group info from cached grpList first, then fallback heuristic
+    final resolvedGroup = _resolveGroupInfo(item, group);
+    item['groupInfo'] = resolvedGroup;
+
+    bool isCr = resolvedGroup['isCr'] == true;
+    item['isCr'] = isCr;
+
+    double opening = item['OPENINGBAL']?.toDouble() ?? 0.0;
+    double debit = item['DEBIT']?.toDouble() ?? 0.0;
+    double credit = item['CREDIT']?.toDouble() ?? 0.0;
+
+    double closing;
+    if (isCr) {
+      closing = opening - debit + credit;
+    } else {
+      closing = opening + debit - credit;
+    }
+
+    var openingDisplay = formatDrCr(opening, isCr);
+    var closingDisplay = formatDrCr(closing, isCr);
+
+    item['processedOpeningBalance'] = openingDisplay['value'];
+    item['openingDrCr'] = openingDisplay['type'];
+    item['processedDebit'] = debit.abs();
+    item['processedCredit'] = credit.abs();
+    item['processedClosingBalance'] = closingDisplay['value'];
+    item['closingDrCr'] = closingDisplay['type'];
+
+    item['originalOpeningBalance'] = opening;
+    item['originalDebit'] = debit;
+    item['originalCredit'] = credit;
+    item['originalClosingBalance'] = closing;
+  }
+
+  Map<String, dynamic> _resolveGroupInfo(
+      Map<String, dynamic> item, Map<String, dynamic> incomingGroup) {
+    // 1) If incoming group is valid (has isCr), use it
+    if (incomingGroup.isNotEmpty && incomingGroup['isCr'] != null) {
+      return incomingGroup;
+    }
+
+    // 2) Try from grpList by direct id
+    Map<String, dynamic>? fromId =
+        grpList.firstWhere((g) => g['id'] == item['ID'], orElse: () => {});
+    if (fromId.isNotEmpty && fromId['isCr'] != null) {
+      _attachNatureLabel(fromId);
+      return fromId;
+    }
+
+    // 3) Try from grpList by groupId/parentId
+    final parentKey = item['groupId'] ?? item['parentId'];
+    if (parentKey != null) {
+      Map<String, dynamic>? parent =
+          grpList.firstWhere((g) => g['id'] == parentKey, orElse: () => {});
+      if (parent.isNotEmpty && parent['isCr'] != null) {
+        _attachNatureLabel(parent);
+        return parent;
+      }
+    }
+
+    // 4) Fallback heuristic (name-based)
+    final derived = _deriveGroupInfo(item);
+    _attachNatureLabel(derived);
+    return derived;
+  }
+
+  void _attachNatureLabel(Map<String, dynamic> group) {
+    if (group['nature'] != null && group['natureLabel'] != null) return;
+    final nature = group['nature'];
+    if (nature == 2 || nature == 3) {
+      group['natureLabel'] = 'Liabilities';
+    } else if (nature == 1 || nature == 4) {
+      group['natureLabel'] = 'Assets';
+    }
+  }
+
+  // Derive group info when not provided from cache (guards against missing grpList)
+  Map<String, dynamic> _deriveGroupInfo(Map<String, dynamic> item) {
+    final name = (item['NAME'] ?? '').toString().toLowerCase();
+
+    // Heuristic: credit-nature groups
+    final isCr = (name.contains('capital') ||
+            name.contains('liabil') ||
+            name.contains('sales') ||
+            name.contains('income'))
+        ? true
+        : false;
+
+    final nature = isCr ? 'Liabilities' : 'Assets';
+
+    return {'isCr': isCr, 'nature': nature};
+  }
+
+  // ---------- Helpers mirrored from Angular logic ----------
+  double getProcessedOpeningBalance(Map<String, dynamic> item) {
+    if (item['processedOpeningBalance'] != null) {
+      return (item['processedOpeningBalance'] as num).toDouble();
+    }
+    final isCr =
+        item['groupInfo'] != null ? item['groupInfo']['isCr'] : item['isCr'];
+    if (isCr != null) {
+      final display = formatDrCr((item['OPENINGBAL'] ?? 0).toDouble(), isCr);
+      item['processedOpeningBalance'] = display['value'];
+      item['openingDrCr'] = display['type'];
+      return (display['value'] as num).toDouble();
+    }
+    return (item['OPENINGBAL'] ?? 0).abs().toDouble();
+  }
+
+  double getProcessedDebit(Map<String, dynamic> item) {
+    if (item['processedDebit'] != null) {
+      return (item['processedDebit'] as num).toDouble();
+    }
+    return (item['DEBIT'] ?? 0).abs().toDouble();
+  }
+
+  double getProcessedCredit(Map<String, dynamic> item) {
+    if (item['processedCredit'] != null) {
+      return (item['processedCredit'] as num).toDouble();
+    }
+    return (item['CREDIT'] ?? 0).abs().toDouble();
+  }
+
+  double getProcessedClosingBalanceValue(Map<String, dynamic> item) {
+    if (item['processedClosingBalance'] != null) {
+      return (item['processedClosingBalance'] as num).toDouble();
+    }
+    return ((item['OPENINGBAL'] ?? 0) +
+            (item['DEBIT'] ?? 0) +
+            (item['CREDIT'] ?? 0))
+        .abs()
+        .toDouble();
+  }
+
+  String getClosingDrCr(Map<String, dynamic> item) {
+    if (item['closingDrCr'] != null) {
+      return item['closingDrCr'];
+    }
+
+    final isCr =
+        item['groupInfo'] != null ? item['groupInfo']['isCr'] : item['isCr'];
+    final opening =
+        (item['originalOpeningBalance'] ?? item['OPENINGBAL'] ?? 0.0)
+            .toDouble();
+    final debit = (item['originalDebit'] ?? item['DEBIT'] ?? 0.0).toDouble();
+    final credit = (item['originalCredit'] ?? item['CREDIT'] ?? 0.0).toDouble();
+
+    double closing;
+    if (isCr == true) {
+      closing = opening - debit + credit;
+    } else if (isCr == false) {
+      closing = opening + debit - credit;
+    } else {
+      closing = opening + debit + credit;
+    }
+
+    return formatDrCr(closing, isCr == true)['type'] ?? '';
+  }
+
+  double getTotalProcessedOpeningBalance(List<Map<String, dynamic>> lst) {
+    final totalOpening = lst.fold<double>(
+        0.0,
+        (sum, obj) =>
+            sum +
+            ((obj['originalOpeningBalance'] ?? obj['OPENINGBAL'] ?? 0.0)
+                .toDouble()));
+
+    final firstItem = lst.isNotEmpty ? lst.first : null;
+    final isCr = firstItem != null && firstItem['groupInfo'] != null
+        ? firstItem['groupInfo']['isCr']
+        : firstItem?['isCr'];
+    if (isCr != null) {
+      final display = formatDrCr(totalOpening, isCr);
+      return (display['value'] as num).toDouble();
+    }
+    return totalOpening.abs();
+  }
+
+  double getTotalOpeningBalanceWithSign(List<Map<String, dynamic>> lst) {
+    return lst.fold<double>(
+        0.0,
+        (sum, obj) =>
+            sum +
+            ((obj['originalOpeningBalance'] ?? obj['OPENINGBAL'] ?? 0.0)
+                .toDouble()));
+  }
+
+  String getOpeningDrCrForGroup(List<Map<String, dynamic>> lst) {
+    if (lst.isEmpty) return '';
+
+    Map<String, dynamic>? groupInfo = lst.firstWhere(
+        (item) => item['groupInfo'] != null,
+        orElse: () => <String, dynamic>{})['groupInfo'];
+
+    if (groupInfo == null) {
+      groupInfo = lst.firstWhere((item) => item['isCr'] != null,
+          orElse: () => <String, dynamic>{});
+    }
+
+    if (groupInfo == null) return '';
+    final isCr = groupInfo['isCr'] ?? groupInfo['iscr'] ?? groupInfo['isCr'];
+    final totalOpening = getTotalOpeningBalanceWithSign(lst);
+    if (totalOpening >= 0) {
+      return isCr == true ? 'Cr' : 'Dr';
+    }
+    return isCr == true ? 'Dr' : 'Cr';
+  }
+
+  double getTotalProcessedDebit(List<Map<String, dynamic>> lst) {
+    return lst.fold<double>(
+        0.0,
+        (sum, obj) =>
+            sum +
+            ((obj['originalDebit'] ?? obj['DEBIT'] ?? 0.0).abs().toDouble()));
+  }
+
+  double getTotalProcessedCredit(List<Map<String, dynamic>> lst) {
+    return lst.fold<double>(
+        0.0,
+        (sum, obj) =>
+            sum +
+            ((obj['originalCredit'] ?? obj['CREDIT'] ?? 0.0).abs().toDouble()));
+  }
+
+  // Determine Dr/Cr for a group based on net closing balance and group nature (matches Angular)
+  String getClosingDrCrForGroup(List<Map<String, dynamic>> lst) {
+    if (lst.isEmpty) return '';
+
+    Map<String, dynamic>? groupInfo;
+    for (var item in lst) {
+      if (item['groupInfo'] != null) {
+        groupInfo = item['groupInfo'];
+        break;
+      }
+    }
+
+    groupInfo ??= lst.firstWhere((item) => item['isCr'] != null,
+        orElse: () => <String, dynamic>{});
+
+    if (groupInfo == null || groupInfo['isCr'] == null) return '';
+    final isCr = groupInfo['isCr'] as bool;
+    final netAmt = getNetAmountWithSign(lst);
+    if (netAmt >= 0) {
+      return isCr ? 'Cr' : 'Dr';
+    }
+    return isCr ? 'Dr' : 'Cr';
   }
 
   @override
@@ -594,540 +893,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
               ? Center(
                   child: CircularProgressIndicator(),
                 )
-              :
-              // Expanded(
-              //     child: ListView.builder(
-              //       itemCount: value?.length ?? 0,
-              //       itemBuilder: (context, index) {
-              //         if (value == null || value!.isEmpty) {
-              //           return Center(
-              //             child: Text('No invoices found'),
-              //           );
-              //         }
-              //         var invoice = value![index];
-              //         return Container(
-              //           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              //           child: Column(
-              //             mainAxisAlignment: MainAxisAlignment.start,
-              //             crossAxisAlignment: CrossAxisAlignment.start,
-              //             children: [
-              //               // Text(
-              //               //   '${formattedDate} ',
-              //               //   style: inter400,
-              //               // ),
-
-              //               SizedBox(
-              //                 height: 6,
-              //               ),
-              //               customHeader(
-              //                   index, invoice, _isExpanded[index], "parent"),
-              //               if (showOpeningBal)
-              //                 Row(
-              //                   mainAxisAlignment:
-              //                       MainAxisAlignment.spaceBetween,
-              //                   crossAxisAlignment: CrossAxisAlignment.center,
-              //                   children: [
-              //                     Expanded(
-              //                       flex: 2,
-              //                       child: Text(
-              //                         'Opening Balance',
-              //                         style: inter600,
-              //                         overflow: TextOverflow.ellipsis,
-              //                       ),
-              //                     ),
-              //                     Expanded(
-              //                       flex: 1,
-              //                       child: Text(
-              //                         ':',
-              //                         style: inter600,
-              //                         overflow: TextOverflow.ellipsis,
-              //                       ),
-              //                     ),
-              //                     Expanded(
-              //                       flex: 4,
-              //                       child: Text(
-              //                         '₹${formatAmount(invoice['OPENINGBAL'])}',
-              //                         style: inter400,
-              //                         overflow: TextOverflow.ellipsis,
-              //                       ),
-              //                     ),
-              //                   ],
-              //                 ),
-
-              //               SizedBox(
-              //                 height: 6,
-              //               ),
-              //               if (showDebit)
-              //                 Row(
-              //                   mainAxisAlignment:
-              //                       MainAxisAlignment.spaceBetween,
-              //                   crossAxisAlignment: CrossAxisAlignment.center,
-              //                   children: [
-              //                     Expanded(
-              //                       flex: 2,
-              //                       child: Text(
-              //                         'Debit',
-              //                         style: inter600,
-              //                         overflow: TextOverflow.ellipsis,
-              //                       ),
-              //                     ),
-              //                     Expanded(
-              //                       flex: 1,
-              //                       child: Text(
-              //                         ':',
-              //                         style: inter600,
-              //                         overflow: TextOverflow.ellipsis,
-              //                       ),
-              //                     ),
-              //                     Expanded(
-              //                       flex: 4,
-              //                       child: Text(
-              //                         '₹${formatAmount(invoice['DEBIT'])}',
-              //                         style: inter400,
-              //                         overflow: TextOverflow.ellipsis,
-              //                       ),
-              //                     ),
-              //                   ],
-              //                 ),
-              //               SizedBox(
-              //                 height: 6,
-              //               ),
-              //               if (showCredit)
-              //                 Row(
-              //                   mainAxisAlignment:
-              //                       MainAxisAlignment.spaceBetween,
-              //                   crossAxisAlignment: CrossAxisAlignment.center,
-              //                   children: [
-              //                     Expanded(
-              //                       flex: 2,
-              //                       child: Text(
-              //                         'Credit',
-              //                         style: inter600,
-              //                         overflow: TextOverflow.ellipsis,
-              //                       ),
-              //                     ),
-              //                     Expanded(
-              //                       flex: 1,
-              //                       child: Text(
-              //                         ':',
-              //                         style: inter600,
-              //                         overflow: TextOverflow.ellipsis,
-              //                       ),
-              //                     ),
-              //                     Expanded(
-              //                       flex: 4,
-              //                       child: Text(
-              //                         '₹${formatAmount(invoice['CREDIT'])}',
-              //                         style: inter400,
-              //                         overflow: TextOverflow.ellipsis,
-              //                       ),
-              //                     ),
-              //                   ],
-              //                 ),
-              //               SizedBox(
-              //                 height: 2,
-              //               ),
-              //               if (_isExpanded[index] &&
-              //                   invoice['childNodeData'] != null) ...[
-              //                 Container(
-              //                     height: 120,
-              //                     child: ListView.builder(
-              //                         itemCount:
-              //                             invoice['childNodeData']?.length ?? 0,
-              //                         itemBuilder: (context, childindex) {
-              //                           if (invoice['childNodeData'] == null ||
-              //                               invoice['childNodeData'].isEmpty) {
-              //                             return SizedBox.shrink();
-              //                           }
-              //                           var groupchildData = invoice[
-              //                               'childNodeData']![childindex];
-              //                           return Container(
-              //                               padding: const EdgeInsets.symmetric(
-              //                                   horizontal: 8.0),
-              //                               child: Column(
-              //                                   mainAxisAlignment:
-              //                                       MainAxisAlignment.start,
-              //                                   crossAxisAlignment:
-              //                                       CrossAxisAlignment.start,
-              //                                   children: [
-              //                                     SizedBox(
-              //                                       height: 6,
-              //                                     ),
-              //                                     customHeader(
-              //                                         childindex,
-              //                                         groupchildData,
-              //                                         _isChildExpanded[index]
-              //                                             [childindex],
-              //                                         "child"),
-              //                                     if (showOpeningBal)
-              //                                       Row(
-              //                                         mainAxisAlignment:
-              //                                             MainAxisAlignment
-              //                                                 .spaceBetween,
-              //                                         crossAxisAlignment:
-              //                                             CrossAxisAlignment
-              //                                                 .center,
-              //                                         children: [
-              //                                           Expanded(
-              //                                             flex: 2,
-              //                                             child: Text(
-              //                                               'Opening Balance',
-              //                                               style: inter600,
-              //                                               overflow:
-              //                                                   TextOverflow
-              //                                                       .ellipsis,
-              //                                             ),
-              //                                           ),
-              //                                           Expanded(
-              //                                             flex: 1,
-              //                                             child: Text(
-              //                                               ':',
-              //                                               style: inter600,
-              //                                               overflow:
-              //                                                   TextOverflow
-              //                                                       .ellipsis,
-              //                                             ),
-              //                                           ),
-              //                                           Expanded(
-              //                                             flex: 4,
-              //                                             child: Text(
-              //                                               '₹${formatAmount(groupchildData['OPENINGBAL'])}',
-              //                                               style: inter400,
-              //                                               overflow:
-              //                                                   TextOverflow
-              //                                                       .ellipsis,
-              //                                             ),
-              //                                           ),
-              //                                         ],
-              //                                       ),
-              //                                     SizedBox(
-              //                                       height: 6,
-              //                                     ),
-              //                                     if (showDebit)
-              //                                       Row(
-              //                                         mainAxisAlignment:
-              //                                             MainAxisAlignment
-              //                                                 .spaceBetween,
-              //                                         crossAxisAlignment:
-              //                                             CrossAxisAlignment
-              //                                                 .center,
-              //                                         children: [
-              //                                           Expanded(
-              //                                             flex: 2,
-              //                                             child: Text(
-              //                                               'Debit',
-              //                                               style: inter600,
-              //                                               overflow:
-              //                                                   TextOverflow
-              //                                                       .ellipsis,
-              //                                             ),
-              //                                           ),
-              //                                           Expanded(
-              //                                             flex: 1,
-              //                                             child: Text(
-              //                                               ':',
-              //                                               style: inter600,
-              //                                               overflow:
-              //                                                   TextOverflow
-              //                                                       .ellipsis,
-              //                                             ),
-              //                                           ),
-              //                                           Expanded(
-              //                                             flex: 4,
-              //                                             child: Text(
-              //                                               '₹${formatAmount(groupchildData['DEBIT'])}',
-              //                                               style: inter400,
-              //                                               overflow:
-              //                                                   TextOverflow
-              //                                                       .ellipsis,
-              //                                             ),
-              //                                           ),
-              //                                         ],
-              //                                       ),
-              //                                     SizedBox(
-              //                                       height: 6,
-              //                                     ),
-              //                                     if (showCredit)
-              //                                       Row(
-              //                                         mainAxisAlignment:
-              //                                             MainAxisAlignment
-              //                                                 .spaceBetween,
-              //                                         crossAxisAlignment:
-              //                                             CrossAxisAlignment
-              //                                                 .center,
-              //                                         children: [
-              //                                           Expanded(
-              //                                             flex: 2,
-              //                                             child: Text(
-              //                                               'Credit',
-              //                                               style: inter600,
-              //                                               overflow:
-              //                                                   TextOverflow
-              //                                                       .ellipsis,
-              //                                             ),
-              //                                           ),
-              //                                           Expanded(
-              //                                             flex: 1,
-              //                                             child: Text(
-              //                                               ':',
-              //                                               style: inter600,
-              //                                               overflow:
-              //                                                   TextOverflow
-              //                                                       .ellipsis,
-              //                                             ),
-              //                                           ),
-              //                                           Expanded(
-              //                                             flex: 4,
-              //                                             child: Text(
-              //                                               '₹${formatAmount(groupchildData['CREDIT'])}',
-              //                                               style: inter400,
-              //                                               overflow:
-              //                                                   TextOverflow
-              //                                                       .ellipsis,
-              //                                             ),
-              //                                           ),
-              //                                         ],
-              //                                       ),
-              //                                     if (_isChildExpanded[index]
-              //                                         [childindex]) ...[
-              //                                       SingleChildScrollView(
-              //                                         child: Column(
-              //                                           children: List.generate(
-              //                                             groupchildData[
-              //                                                         'childNodeData']
-              //                                                     ?.length ??
-              //                                                 0,
-              //                                             (childindex) {
-              //                                               var childgroupchildData =
-              //                                                   groupchildData[
-              //                                                           'childNodeData']![
-              //                                                       childindex];
-              //                                               return Container(
-              //                                                 decoration: BoxDecoration(
-              //                                                     border: Border(
-              //                                                         left: BorderSide(
-              //                                                             color:
-              //                                                                 Colors.grey))),
-              //                                                 padding:
-              //                                                     const EdgeInsets
-              //                                                         .symmetric(
-              //                                                         horizontal:
-              //                                                             8.0),
-              //                                                 child: Column(
-              //                                                   mainAxisAlignment:
-              //                                                       MainAxisAlignment
-              //                                                           .start,
-              //                                                   crossAxisAlignment:
-              //                                                       CrossAxisAlignment
-              //                                                           .start,
-              //                                                   children: [
-              //                                                     Row(
-              //                                                       mainAxisAlignment:
-              //                                                           MainAxisAlignment
-              //                                                               .spaceBetween,
-              //                                                       crossAxisAlignment:
-              //                                                           CrossAxisAlignment
-              //                                                               .center,
-              //                                                       children: [
-              //                                                         Expanded(
-              //                                                           flex: 3,
-              //                                                           child:
-              //                                                               Text(
-              //                                                             '${childgroupchildData['NAME']}',
-              //                                                             style:
-              //                                                                 inter600,
-              //                                                             overflow:
-              //                                                                 TextOverflow.ellipsis,
-              //                                                           ),
-              //                                                         ),
-              //                                                         Expanded(
-              //                                                             flex:
-              //                                                                 1,
-              //                                                             child:
-              //                                                                 Padding(
-              //                                                               padding:
-              //                                                                   const EdgeInsets.symmetric(horizontal: 8.0),
-              //                                                               child:
-              //                                                                   InkWell(
-              //                                                                 onTap: () {
-              //                                                                   toggleItem(childgroupchildData);
-              //                                                                 },
-              //                                                                 child: Icon(
-              //                                                                   Icons.folder,
-              //                                                                 ),
-              //                                                               ),
-              //                                                             )),
-              //                                                       ],
-              //                                                     ),
-              //                                                     SizedBox(
-              //                                                       height: 6,
-              //                                                     ),
-              //                                                     if (showOpeningBal)
-              //                                                       Row(
-              //                                                         mainAxisAlignment:
-              //                                                             MainAxisAlignment
-              //                                                                 .spaceBetween,
-              //                                                         crossAxisAlignment:
-              //                                                             CrossAxisAlignment
-              //                                                                 .center,
-              //                                                         children: [
-              //                                                           Expanded(
-              //                                                             flex:
-              //                                                                 2,
-              //                                                             child:
-              //                                                                 Text(
-              //                                                               'Opening Balance',
-              //                                                               style:
-              //                                                                   inter600,
-              //                                                               overflow:
-              //                                                                   TextOverflow.ellipsis,
-              //                                                             ),
-              //                                                           ),
-              //                                                           Expanded(
-              //                                                             flex:
-              //                                                                 1,
-              //                                                             child:
-              //                                                                 Text(
-              //                                                               ':',
-              //                                                               style:
-              //                                                                   inter600,
-              //                                                               overflow:
-              //                                                                   TextOverflow.ellipsis,
-              //                                                             ),
-              //                                                           ),
-              //                                                           Expanded(
-              //                                                             flex:
-              //                                                                 4,
-              //                                                             child:
-              //                                                                 Text(
-              //                                                               '₹${formatAmount(childgroupchildData['OPENINGBAL'])}',
-              //                                                               style:
-              //                                                                   inter400,
-              //                                                               overflow:
-              //                                                                   TextOverflow.ellipsis,
-              //                                                             ),
-              //                                                           ),
-              //                                                         ],
-              //                                                       ),
-              //                                                     SizedBox(
-              //                                                       height: 6,
-              //                                                     ),
-              //                                                     if (showDebit)
-              //                                                       Row(
-              //                                                         mainAxisAlignment:
-              //                                                             MainAxisAlignment
-              //                                                                 .spaceBetween,
-              //                                                         crossAxisAlignment:
-              //                                                             CrossAxisAlignment
-              //                                                                 .center,
-              //                                                         children: [
-              //                                                           Expanded(
-              //                                                             flex:
-              //                                                                 2,
-              //                                                             child:
-              //                                                                 Text(
-              //                                                               'Debit',
-              //                                                               style:
-              //                                                                   inter600,
-              //                                                               overflow:
-              //                                                                   TextOverflow.ellipsis,
-              //                                                             ),
-              //                                                           ),
-              //                                                           Expanded(
-              //                                                             flex:
-              //                                                                 1,
-              //                                                             child:
-              //                                                                 Text(
-              //                                                               ':',
-              //                                                               style:
-              //                                                                   inter600,
-              //                                                               overflow:
-              //                                                                   TextOverflow.ellipsis,
-              //                                                             ),
-              //                                                           ),
-              //                                                           Expanded(
-              //                                                             flex:
-              //                                                                 4,
-              //                                                             child:
-              //                                                                 Text(
-              //                                                               '₹${formatAmount(childgroupchildData['DEBIT'])}',
-              //                                                               style:
-              //                                                                   inter400,
-              //                                                               overflow:
-              //                                                                   TextOverflow.ellipsis,
-              //                                                             ),
-              //                                                           ),
-              //                                                         ],
-              //                                                       ),
-              //                                                     SizedBox(
-              //                                                       height: 6,
-              //                                                     ),
-              //                                                     if (showCredit)
-              //                                                       Row(
-              //                                                         mainAxisAlignment:
-              //                                                             MainAxisAlignment
-              //                                                                 .spaceBetween,
-              //                                                         crossAxisAlignment:
-              //                                                             CrossAxisAlignment
-              //                                                                 .center,
-              //                                                         children: [
-              //                                                           Expanded(
-              //                                                             flex:
-              //                                                                 2,
-              //                                                             child:
-              //                                                                 Text(
-              //                                                               'Credit',
-              //                                                               style:
-              //                                                                   inter600,
-              //                                                               overflow:
-              //                                                                   TextOverflow.ellipsis,
-              //                                                             ),
-              //                                                           ),
-              //                                                           Expanded(
-              //                                                             flex:
-              //                                                                 1,
-              //                                                             child:
-              //                                                                 Text(
-              //                                                               ':',
-              //                                                               style:
-              //                                                                   inter600,
-              //                                                               overflow:
-              //                                                                   TextOverflow.ellipsis,
-              //                                                             ),
-              //                                                           ),
-              //                                                           Expanded(
-              //                                                             flex:
-              //                                                                 4,
-              //                                                             child:
-              //                                                                 Text(
-              //                                                               '₹${formatAmount(childgroupchildData['CREDIT'])}',
-              //                                                               style:
-              //                                                                   inter400,
-              //                                                               overflow:
-              //                                                                   TextOverflow.ellipsis,
-              //                                                             ),
-              //                                                           ),
-              //                                                         ],
-              //                                                       ),
-              //                                                   ],
-              //                                                 ),
-              //                                               );
-              //                                             },
-              //                                           ),
-              //                                         ),
-              //                                       )
-              //                                     ],
-              //                                   ]));
-              //                         }))
-              //               ],
-              //               Divider()
-              //             ],
-              //           ),
-              //         );
-              //       },
-              //     ),
-              //   ),
-              Expanded(child: accordianList(context))
+              : Expanded(child: accordianList(context))
         ],
       ],
     );
@@ -1135,6 +901,19 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
 
   Widget customHeader(
       int index, Map<String, dynamic> item, bool isExpanded, String type) {
+    final closingVal = getProcessedClosingBalanceValue(item);
+    final closingDrCr = getClosingDrCr(item);
+    final openingVal = getProcessedOpeningBalance(item);
+    final openingDrCr = item['openingDrCr'] ??
+        formatDrCr(
+            (item['originalOpeningBalance'] ?? item['OPENINGBAL'] ?? 0.0)
+                .toDouble(),
+            (item['groupInfo'] != null
+                    ? item['groupInfo']['isCr']
+                    : item['isCr']) ==
+                true)['type'];
+    final debitVal = getProcessedDebit(item);
+    final creditVal = getProcessedCredit(item);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -1154,9 +933,22 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                   ),
                   Expanded(
                     flex: 6,
-                    child: Text(
-                      '₹${formatAmount(item['OPENINGBAL'] + item['DEBIT'] + item['CREDIT'])}',
-                      style: inter600,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${CurrencyFormatter.format(closingVal)} ${closingDrCr}',
+                          style: inter600,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                            'Opening: ${CurrencyFormatter.format(openingVal)} ${openingDrCr ?? ''}',
+                            style: inter400),
+                        Text('Debit: ${CurrencyFormatter.format(debitVal)}',
+                            style: inter400),
+                        Text('Credit: ${CurrencyFormatter.format(creditVal)}',
+                            style: inter400),
+                      ],
                     ),
                   ),
                 ],
@@ -1241,12 +1033,6 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
       fontSize: 14,
     );
 
-    final TextStyle inter13_w600 = GoogleFonts.inter(
-      color: Color.fromRGBO(255, 255, 255, 1),
-      fontWeight: FontWeight.w600,
-      fontSize: 14,
-    );
-    final formattedTotal = CurrencyFormatter.format(totalamount);
     return Container(
       padding: EdgeInsets.all(16),
       //height: 120,
@@ -1281,7 +1067,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                   Expanded(
                     flex: 4,
                     child: Text(
-                      '₹${formatAmount(getNetAmount(value))}',
+                      '${CurrencyFormatter.format(getNetAmount(value))} ${getClosingDrCrForGroup(value)}',
                       style: inter14_w600,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1312,7 +1098,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                     Expanded(
                       flex: 4,
                       child: Text(
-                        '₹${sumOfArrayProperty(value, 'OPENINGBAL')}',
+                        '${CurrencyFormatter.format(getTotalProcessedOpeningBalance(value))} ${getOpeningDrCrForGroup(value)}',
                         style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1346,7 +1132,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                     Expanded(
                       flex: 4,
                       child: Text(
-                        '₹${sumOfArrayProperty(value, 'DEBIT')}',
+                        '${CurrencyFormatter.format(getTotalProcessedDebit(value))}',
                         style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1380,7 +1166,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                     Expanded(
                       flex: 4,
                       child: Text(
-                        '₹${sumOfArrayProperty(value, 'CREDIT')}',
+                        '${CurrencyFormatter.format(getTotalProcessedCredit(value))}',
                         style: inter14_w600,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1399,10 +1185,12 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
       itemCount: trialBalanceList.length,
       itemBuilder: (context, index) {
         final item = trialBalanceList[index];
+        final subtitleText =
+            'Opening: ${item.processedOpeningBalance} ${item.openingDrCr}, Debit: ${item.processedDebit}, Credit: ${item.processedCredit}';
         if (item.isgroup) {
           return ExpansionTile(
             title: Text(item.name),
-            subtitle: Text('Debit: ${item.debit}, Credit: ${item.credit}'),
+            subtitle: Text(subtitleText),
             children: [
               if (expandedItems.containsKey(item.id))
                 ...expandedItems[item.id]!
@@ -1410,14 +1198,14 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                         ? ExpansionTile(
                             title: Text(subItem.name),
                             subtitle: Text(
-                                'Debit: ${subItem.debit}, Credit: ${subItem.credit}'),
+                                'Opening: ${subItem.processedOpeningBalance} ${subItem.openingDrCr}, Debit: ${subItem.processedDebit}, Credit: ${subItem.processedCredit}'),
                             children: [
                               if (expandedItems.containsKey(subItem.id))
                                 ...expandedItems[subItem.id]!.map(
                                   (innerItem) => ListTile(
                                     title: Text(innerItem.name),
                                     subtitle: Text(
-                                        'Debit: ${innerItem.debit}, Credit: ${innerItem.credit}'),
+                                        'Opening: ${innerItem.processedOpeningBalance} ${innerItem.openingDrCr}, Debit: ${innerItem.processedDebit}, Credit: ${innerItem.processedCredit}'),
                                   ),
                                 )
                               else
@@ -1430,7 +1218,7 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
                         : ListTile(
                             title: Text(subItem.name),
                             subtitle: Text(
-                                'Debit: ${subItem.debit}, Credit: ${subItem.credit}'),
+                                'Opening: ${subItem.processedOpeningBalance} ${subItem.openingDrCr}, Debit: ${subItem.processedDebit}, Credit: ${subItem.processedCredit}'),
                           ))
               else
                 TextButton(
@@ -1442,21 +1230,11 @@ class _TrialBalReportScreenState extends State<TrialBalReportScreen>
         } else {
           return ListTile(
             title: Text(item.name),
-            subtitle: Text('Debit: ${item.debit}, Credit: ${item.credit}'),
+            subtitle: Text(subtitleText),
           );
         }
       },
     );
-  }
-}
-
-String formatAmountforString(double amount) {
-  try {
-    final NumberFormat numberFormat = NumberFormat("#,##,##0.00", "en_IN");
-    return numberFormat.format(amount);
-  } catch (e) {
-    return amount.toString() ??
-        '00.0'; // Return the original value if parsing fails
   }
 }
 
@@ -1468,28 +1246,55 @@ List<UpdateAddressModel> updateAddressModelFromJson(
 class UpdateAddressModel {
   int id;
   bool isgroup;
-  double openingbal;
-  double debit;
-  double credit;
   String name;
+
+  double processedOpeningBalance;
+  String openingDrCr;
+  double processedDebit;
+  double processedCredit;
+  double processedClosingBalance;
+  String closingDrCr;
+
+  double originalOpeningBalance;
+  double originalDebit;
+  double originalCredit;
+  double originalClosingBalance;
+
+  bool iscr;
 
   UpdateAddressModel({
     required this.id,
     required this.isgroup,
-    required this.openingbal,
-    required this.debit,
-    required this.credit,
     required this.name,
+    required this.processedOpeningBalance,
+    required this.openingDrCr,
+    required this.processedDebit,
+    required this.processedCredit,
+    required this.processedClosingBalance,
+    required this.closingDrCr,
+    required this.originalOpeningBalance,
+    required this.originalDebit,
+    required this.originalCredit,
+    required this.originalClosingBalance,
+    required this.iscr,
   });
 
   factory UpdateAddressModel.fromJson(Map<String, dynamic> json) =>
       UpdateAddressModel(
         id: json["ID"],
         isgroup: json["ISGROUP"],
-        openingbal: json["OPENINGBAL"]?.toDouble() ?? 0.0,
-        debit: json["DEBIT"]?.toDouble() ?? 0.0,
-        credit: json["CREDIT"]?.toDouble() ?? 0.0,
         name: json["NAME"],
+        processedOpeningBalance: json['processedOpeningBalance'] ?? 0.0,
+        openingDrCr: json['openingDrCr'] ?? '',
+        processedDebit: json['processedDebit'] ?? 0.0,
+        processedCredit: json['processedCredit'] ?? 0.0,
+        processedClosingBalance: json['processedClosingBalance'] ?? 0.0,
+        closingDrCr: json['closingDrCr'] ?? '',
+        originalOpeningBalance: json['originalOpeningBalance'] ?? 0.0,
+        originalDebit: json['originalDebit'] ?? 0.0,
+        originalCredit: json['originalCredit'] ?? 0.0,
+        originalClosingBalance: json['originalClosingBalance'] ?? 0.0,
+        iscr: json['isCr'] ?? true,
       );
 }
 

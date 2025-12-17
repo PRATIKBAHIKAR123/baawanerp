@@ -284,6 +284,7 @@ class CurrencyFormatter {
   static List<Map<String, dynamic>> _currencyList = [];
   static int _currencyId = 1; // default INR
   static bool _initialized = false;
+  static int _precision = 2;
 
   /// Initialize locales & currency list
   static Future<void> init() async {
@@ -300,6 +301,7 @@ class CurrencyFormatter {
     _currencyList = await getCurrencyList();
     final company = await CompanyDataUtil.getCompanyFromLocalStorage();
     _currencyId = company?['baseCurrency'] ?? 1;
+    _precision = company?['precision'] ?? 2;
   }
 
   static String format(num? amount) {
@@ -350,7 +352,7 @@ class CurrencyFormatter {
     final formatted = NumberFormat.currency(
       locale: safeLocale,
       symbol: '',
-      decimalDigits: 2,
+      decimalDigits: _precision,
     ).format(amount);
 
     return '$symbol$formatted';
