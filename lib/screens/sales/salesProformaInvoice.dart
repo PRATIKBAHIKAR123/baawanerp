@@ -19,6 +19,8 @@ import 'package:mlco/screens/dashboard/maindashboard.dart';
 import 'package:mlco/services/apiServices.dart';
 import 'package:mlco/services/sessionCheckService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mlco/config/app_permissions.dart';
+import 'package:mlco/widgets/permission_aware_widget.dart';
 
 class ProformaInvoiceScreen extends StatefulWidget {
   final InvoiceType invoiceType;
@@ -374,20 +376,32 @@ class _ProformaInvoiceScreenState extends State<ProformaInvoiceScreen> {
                                         invoice['grandTotal']),
                                     style: mlco_gradient_text2,
                                   ),
-                                  GestureDetector(
-                                    onTapDown: (TapDownDetails details) {
-                                      showCustomPopupMenu(
-                                        context: context,
-                                        position: details.globalPosition,
-                                        invoice: invoice,
-                                        id: invoice['invCode'].toString(),
-                                        invType: invoice_type,
-                                      );
-                                    },
-                                    child: Image.asset(
-                                      'assets/icons/Menubab.png',
-                                      height: 24,
-                                      width: 24,
+                                  PermissionAwareWidget(
+                                    anyOf: [
+                                      AppPermissions
+                                          .can_view_msg_proforma_invoice,
+                                      AppPermissions
+                                          .can_utility_msg_proforma_invoice
+                                    ],
+                                    child: GestureDetector(
+                                      onTapDown: (TapDownDetails details) {
+                                        showCustomPopupMenu(
+                                          context: context,
+                                          position: details.globalPosition,
+                                          invoice: invoice,
+                                          id: invoice['invCode'].toString(),
+                                          invType: invoice_type,
+                                          permissionId: AppPermissions
+                                              .can_view_msg_proforma_invoice,
+                                          utilityPermissionId: AppPermissions
+                                              .can_utility_msg_proforma_invoice,
+                                        );
+                                      },
+                                      child: Image.asset(
+                                        'assets/icons/Menubab.png',
+                                        height: 24,
+                                        width: 24,
+                                      ),
                                     ),
                                   ),
                                 ]),

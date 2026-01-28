@@ -23,6 +23,8 @@ import 'package:mlco/services/companyFetch.dart';
 import 'package:mlco/services/ledgerService.dart';
 import 'package:mlco/services/sessionCheckService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mlco/widgets/permission_aware_widget.dart';
+import 'package:mlco/config/app_permissions.dart';
 
 class LedgersListScreen extends StatefulWidget {
   const LedgersListScreen({super.key});
@@ -201,9 +203,12 @@ class _LedgersListScreenState extends State<LedgersListScreen> {
             height: 10,
           ),
           Container(
-            child: SearchLedger(
-              onTextChanged: billNoChange,
-              onledgerSelects: ledgerSelect,
+            child: PermissionAwareWidget(
+              permissionId: AppPermissions.can_search_ledgers,
+              child: SearchLedger(
+                onTextChanged: billNoChange,
+                onledgerSelects: ledgerSelect,
+              ),
             ),
           ),
           SizedBox(
@@ -218,111 +223,120 @@ class _LedgersListScreenState extends State<LedgersListScreen> {
                   'Ledger Listings',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                Container(
-                  padding: EdgeInsets.all(10),
-                  height: 40,
-                  width: 100,
-                  decoration: BoxDecoration(
-                      gradient: mlcoGradient,
-                      boxShadow: [],
-                      borderRadius: BorderRadius.circular(6.0)),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        //fixedSize: Size(95, 20),
-                        backgroundColor: Colors.transparent,
-                        elevation: 0),
-                    onPressed: () {
-                      showGeneralDialog(
-                        context: context,
-                        barrierDismissible: true,
-                        barrierColor: Colors.transparent, // No backdrop
-                        barrierLabel: 'Popup', // Adding barrierLabel
-                        transitionDuration: Duration(milliseconds: 200),
-                        pageBuilder: (BuildContext context,
-                            Animation<double> animation,
-                            Animation<double> secondaryAnimation) {
-                          return Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Material(
-                              type: MaterialType.transparency,
-                              child: Container(
-                                width: MediaQuery.of(context).size.width,
-                                child: LedgerFilterPopup(
-                                  onSubmit: updateDates,
-                                  initialValues: {'city': city, 'group': grpId},
+                PermissionAwareWidget(
+                  permissionId: AppPermissions.can_utility_ledgers,
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    height: 40,
+                    width: 100,
+                    decoration: BoxDecoration(
+                        gradient: mlcoGradient,
+                        boxShadow: [],
+                        borderRadius: BorderRadius.circular(6.0)),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          //fixedSize: Size(95, 20),
+                          backgroundColor: Colors.transparent,
+                          elevation: 0),
+                      onPressed: () {
+                        showGeneralDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          barrierColor: Colors.transparent, // No backdrop
+                          barrierLabel: 'Popup', // Adding barrierLabel
+                          transitionDuration: Duration(milliseconds: 200),
+                          pageBuilder: (BuildContext context,
+                              Animation<double> animation,
+                              Animation<double> secondaryAnimation) {
+                            return Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Material(
+                                type: MaterialType.transparency,
+                                child: Container(
+                                  width: MediaQuery.of(context).size.width,
+                                  child: LedgerFilterPopup(
+                                    onSubmit: updateDates,
+                                    initialValues: {
+                                      'city': city,
+                                      'group': grpId
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                        transitionBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                          return SlideTransition(
-                            position: Tween<Offset>(
-                              begin: Offset(0, 1),
-                              end: Offset(0, 0),
-                            ).animate(animation),
-                            child: child,
-                          );
-                        },
-                      );
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Filter',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        SizedBox(
-                          width: 2,
-                        ),
-                        Image.asset(
-                          'assets/icons/filter.png',
-                          width: 20,
-                          height: 20,
-                          color: Colors.white,
-                        )
-                      ],
+                            );
+                          },
+                          transitionBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: Offset(0, 1),
+                                end: Offset(0, 0),
+                              ).animate(animation),
+                              child: child,
+                            );
+                          },
+                        );
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Filter',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          SizedBox(
+                            width: 2,
+                          ),
+                          Image.asset(
+                            'assets/icons/filter.png',
+                            width: 20,
+                            height: 20,
+                            color: Colors.white,
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                Container(
-                  padding: EdgeInsets.all(10),
-                  height: 40,
-                  width: 100,
-                  decoration: BoxDecoration(
-                      gradient: mlcoGradient,
-                      boxShadow: [],
-                      borderRadius: BorderRadius.circular(6.0)),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        //fixedSize: Size(95, 20),
-                        backgroundColor: Colors.transparent,
-                        elevation: 0),
-                    onPressed: () {},
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          child: Text(
-                            'Add Ledger',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return addLedgerPopup(
-                                  onSubmit: (String, Object) {},
-                                );
-                              },
-                            );
-                          },
-                        )
-                      ],
+                PermissionAwareWidget(
+                  permissionId: AppPermissions.can_create_ledgers,
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    height: 40,
+                    width: 100,
+                    decoration: BoxDecoration(
+                        gradient: mlcoGradient,
+                        boxShadow: [],
+                        borderRadius: BorderRadius.circular(6.0)),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          //fixedSize: Size(95, 20),
+                          backgroundColor: Colors.transparent,
+                          elevation: 0),
+                      onPressed: () {},
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          GestureDetector(
+                            child: Text(
+                              'Add Ledger',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return addLedgerPopup(
+                                    onSubmit: (String, Object) {},
+                                  );
+                                },
+                              );
+                            },
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 )

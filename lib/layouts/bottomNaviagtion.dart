@@ -3,6 +3,8 @@ import 'package:mlco/screens/dashboard/accountdashboard.dart';
 import 'package:mlco/screens/dashboard/maindashboard.dart';
 import 'package:mlco/screens/dashboard/purchasedashboard.dart';
 import 'package:mlco/screens/reports/ledgerOutstandingReports/currentStock.dart';
+import 'package:mlco/config/app_permissions.dart';
+import 'package:mlco/services/permission_manager.dart';
 
 import '../screens/dashboard/salesdashboard.dart';
 
@@ -14,6 +16,77 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Define all possible items with their permissions and original index
+    final allItems = [
+      {
+        'index': 0,
+        'label': 'Dashboard',
+        'icon': 'assets/icons/Home.png',
+        'permissions': null, // Always visible
+      },
+      {
+        'index': 1,
+        'label': 'Sales',
+        'icon': 'assets/icons/Chart.png',
+        'permissions': [
+          AppPermissions.can_view_sales_invoice,
+          AppPermissions.can_view_sales_quotation,
+          AppPermissions.can_view_sales_order,
+          AppPermissions.can_view_sales_enquiry,
+          AppPermissions.can_view_sales_return
+        ],
+      },
+      {
+        'index': 2,
+        'label': 'Purchase',
+        'icon': 'assets/icons/Bag.png',
+        'permissions': [
+          AppPermissions.can_view_purchase_order,
+          AppPermissions.can_view_purchase_invoice,
+          AppPermissions.can_view_purchase_return
+        ],
+      },
+      {
+        'index': 3,
+        'label': 'Stock',
+        'icon': 'assets/icons/Archive.png',
+        'permissions': [
+          AppPermissions.can_view_open_stock,
+          AppPermissions.can_view_stock_in,
+          AppPermissions.can_view_stock_out
+        ],
+      },
+      {
+        'index': 4,
+        'label': 'Account',
+        'icon': 'assets/icons/Briefcase.png',
+        'permissions': [
+          AppPermissions.can_view_payment_voucher,
+          AppPermissions.can_view_receipt_voucher,
+          AppPermissions.can_view_journal_voucher
+        ],
+      },
+    ];
+
+    // Filter items based on permissions
+    final visibleItems = allItems.where((item) {
+      if (item['permissions'] == null) return true;
+      return PermissionManager().hasAny(item['permissions'] as List<int>);
+    }).toList();
+
+    if (visibleItems.length < 2) {
+      return SizedBox.shrink();
+    }
+
+    // Map correct currently selected index
+    // If the original currentIndex is not in visibleItems (permission revoked?), default to 0
+    int displayIndex =
+        visibleItems.indexWhere((item) => item['index'] == currentIndex);
+    // If the active dashboard isn't in the visible items (e.g. user manually navigated there or lost permission)
+    // we should ideally probably navigate them away, but for the navbar display we just need a valid index or to hide selection.
+    // However, BottomNavigationBar requires a valid currentIndex within 0..items.length-1.
+    if (displayIndex == -1) displayIndex = 0;
+
     return Container(
       height: 88,
       clipBehavior: Clip.antiAlias,
@@ -32,112 +105,72 @@ class CustomBottomNavBar extends StatelessWidget {
         ],
       ),
       child: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (currentindex) {
-          onTap(currentindex);
-          switch (currentindex) {
+        currentIndex: displayIndex,
+        onTap: (newIndex) {
+          // Map back to original index for navigation logic
+          int originalIndex = visibleItems[newIndex]['index'] as int;
+          onTap(originalIndex);
+
+          // Navigation Logic
+          switch (originalIndex) {
             case 0:
-              {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => MainDashboardScreen()),
-                );
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MainDashboardScreen()),
+              );
               break;
             case 1:
-              {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => SalesDashboardScreen()),
-                );
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SalesDashboardScreen()),
+              );
+              break;
             case 2:
-              {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => PurchaseDashboardScreen()),
-                );
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => PurchaseDashboardScreen()),
+              );
+              break;
             case 3:
-              {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => CurrentStockReportListScreen()),
-                );
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => CurrentStockReportListScreen()),
+              );
+              break;
             case 4:
-              {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => AccountDashboardScreen()),
-                );
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => AccountDashboardScreen()),
+              );
+              break;
           }
         },
         backgroundColor: Colors.white,
         elevation: 0,
-        items: [
-          BottomNavigationBarItem(
+        items: visibleItems.map((item) {
+          return BottomNavigationBarItem(
             icon: Image.asset(
-              'assets/icons/Home.png',
-              height: 24,
-              width: 24.96,
-            ),
-            activeIcon: Image.asset(
-              'assets/icons/Home.png',
-              height: 24,
-              width: 24.96,
-              color: Color.fromRGBO(131, 196, 76, 1),
-            ),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Image.asset(
-              'assets/icons/Chart.png',
+              item['icon'] as String,
               height: 24,
               width: 24,
             ),
             activeIcon: Image.asset(
-              'assets/icons/Chart.png',
+              item['icon'] as String,
               height: 24,
               width: 24,
               color: Color.fromRGBO(131, 196, 76, 1),
             ),
-            label: 'Sales',
-          ),
-          BottomNavigationBarItem(
-            icon: Image.asset(
-              'assets/icons/Bag.png',
-              height: 24,
-              width: 24,
-            ),
-            label: 'Purchase',
-          ),
-          BottomNavigationBarItem(
-            icon: Image.asset(
-              'assets/icons/Archive.png',
-              height: 24,
-              width: 24,
-            ),
-            label: 'Stock',
-          ),
-          BottomNavigationBarItem(
-            icon: Image.asset(
-              'assets/icons/Briefcase.png',
-              height: 24,
-              width: 24,
-            ),
-            label: 'Account',
-          ),
-        ],
+            label: item['label'] as String,
+          );
+        }).toList(),
         selectedItemColor: Colors.green,
         unselectedItemColor: Color.fromRGBO(199, 199, 204, 1),
         showUnselectedLabels: true,
+        type: BottomNavigationBarType
+            .fixed, // Ensure layout works even with fewer items
       ),
     );
   }

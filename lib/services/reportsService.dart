@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mlco/services/sessionCheckService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mlco/config/api_config.dart';
 
-final String api = 'https://api.baawanerp.com';
+final String api = ApiConfig.baseUrl;
 
 Future<http.Response> ledgerOutstandingReportListService(
     Map<String, dynamic> jsonBody) async {
@@ -35,7 +36,7 @@ Future<http.Response> ledgerOutstandingReportListService(
 Future<http.Response> currentStockReportListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/CurrentStock';
+  var url = '${ApiConfig.baseUrl}/api/Report/CurrentStock';
   var client = http.Client();
   var response;
 
@@ -61,7 +62,7 @@ Future<http.Response> currentStockReportListService(
 Future<http.Response> stockValuationReportListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/StockValuationReport';
+  var url = '${ApiConfig.baseUrl}/api/Report/StockValuationReport';
   var client = http.Client();
   var response;
 
@@ -87,7 +88,7 @@ Future<http.Response> stockValuationReportListService(
 Future<http.Response> ledgerRegisterReportListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/LedgerRegister';
+  var url = '${ApiConfig.baseUrl}/api/Report/LedgerRegister';
   var client = http.Client();
   var response;
 
@@ -113,7 +114,7 @@ Future<http.Response> ledgerRegisterReportListService(
 Future<http.Response> salesPersonReportListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/SalesPersonReport';
+  var url = '${ApiConfig.baseUrl}/api/Report/SalesPersonReport';
   var client = http.Client();
   var response;
 
@@ -139,7 +140,7 @@ Future<http.Response> salesPersonReportListService(
 Future<http.Response> itemRegisterReportListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/ItemRegister';
+  var url = '${ApiConfig.baseUrl}/api/Report/ItemRegister';
   var client = http.Client();
   var response;
 
@@ -165,7 +166,7 @@ Future<http.Response> itemRegisterReportListService(
 Future<http.Response> itemBatchRegisterReportListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/ItemBatchRegister';
+  var url = '${ApiConfig.baseUrl}/api/Report/ItemBatchRegister';
   var client = http.Client();
   var response;
 
@@ -191,7 +192,7 @@ Future<http.Response> itemBatchRegisterReportListService(
 Future<http.Response> batchStockReportListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/BatchStockSummary';
+  var url = '${ApiConfig.baseUrl}/api/Report/BatchStockSummary';
   var client = http.Client();
   var response;
 
@@ -217,7 +218,7 @@ Future<http.Response> batchStockReportListService(
 Future<http.Response> salesTargetRangeListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Common/SalesTargetRange';
+  var url = '${ApiConfig.baseUrl}/api/Common/SalesTargetRange';
   var client = http.Client();
   var response;
 
@@ -243,7 +244,7 @@ Future<http.Response> salesTargetRangeListService(
 Future<http.Response> targetReportListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/ReportTOD';
+  var url = '${ApiConfig.baseUrl}/api/Report/ReportTOD';
   var client = http.Client();
   var response;
 
@@ -269,7 +270,7 @@ Future<http.Response> targetReportListService(
 Future<http.Response> targetReportExportService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/ReportTODExport';
+  var url = '${ApiConfig.baseUrl}/api/Report/ReportTODExport';
   var client = http.Client();
   var response;
 
@@ -293,7 +294,7 @@ Future<http.Response> targetReportExportService(
 }
 
 Future<http.Response> pnlReportService(Map<String, dynamic> jsonBody) async {
-  var url = 'https://api.baawanerp.com/api/Report/PNLReport';
+  var url = '${ApiConfig.baseUrl}/api/Report/PNLReport';
   var client = http.Client();
   var response;
 
@@ -319,7 +320,7 @@ Future<http.Response> pnlReportService(Map<String, dynamic> jsonBody) async {
 
 Future<http.Response> balSheetReportService(
     Map<String, dynamic> jsonBody) async {
-  var url = 'https://api.baawanerp.com/api/Report/BalanceSheetReport';
+  var url = '${ApiConfig.baseUrl}/api/Report/BalanceSheetReport';
   var client = http.Client();
   var response;
 
@@ -345,7 +346,7 @@ Future<http.Response> balSheetReportService(
 
 Future<http.Response> trailBalReportService(
     Map<String, dynamic> jsonBody) async {
-  var url = 'https://api.baawanerp.com/api/Report/TrialBalanceReport';
+  var url = '${ApiConfig.baseUrl}/api/Report/TrialBalanceReport';
   var client = http.Client();
   var response;
 
@@ -372,7 +373,7 @@ Future<http.Response> trailBalReportService(
 Future<http.Response> groupsummaryReportListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/GroupSummaryReport';
+  var url = '${ApiConfig.baseUrl}/api/Report/GroupSummaryReport';
   var client = http.Client();
   var response;
 
@@ -398,7 +399,7 @@ Future<http.Response> groupsummaryReportListService(
 Future<http.Response> groupsummaryReportExportService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/GroupSummaryReportExport';
+  var url = '${ApiConfig.baseUrl}/api/Report/GroupSummaryReportExport';
   var client = http.Client();
   var response;
 
@@ -423,7 +424,7 @@ Future<http.Response> groupsummaryReportExportService(
 
 Future<http.Response> agingReportService(Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/AgeingReport';
+  var url = '${ApiConfig.baseUrl}/api/Report/AgeingReport';
   var client = http.Client();
   var response;
 
@@ -449,7 +450,7 @@ Future<http.Response> agingReportService(Map<String, dynamic> jsonBody) async {
 Future<http.Response> salesColumnarReportService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/SalesColumnarReport';
+  var url = '${ApiConfig.baseUrl}/api/Report/SalesColumnarReport';
   var client = http.Client();
   var response;
 
@@ -475,7 +476,7 @@ Future<http.Response> salesColumnarReportService(
 Future<http.Response> ledgerOutstandingReportExportService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Report/LedgerOutstandingExport';
+  var url = '${ApiConfig.baseUrl}/api/Report/LedgerOutstandingExport';
   var client = http.Client();
   var response;
 

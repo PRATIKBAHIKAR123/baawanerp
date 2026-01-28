@@ -20,6 +20,8 @@ import 'package:mlco/screens/sales/salesOrder.dart';
 import 'package:mlco/screens/sales/salesQuatation.dart';
 import 'package:mlco/services/announcementService.dart';
 import 'package:mlco/services/sessionCheckService.dart';
+import 'package:mlco/config/app_permissions.dart';
+import 'package:mlco/widgets/permission_aware_widget.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   @override
@@ -28,10 +30,26 @@ class MainDashboardScreen extends StatefulWidget {
 
 class _MainDashboardScreenState extends State<MainDashboardScreen> {
   final List<Map<String, dynamic>> quickLinks = [
-    {'id': '1', 'name': 'Sales Invoice'},
-    {'id': '2', 'name': 'Sales Quotation'},
-    {'id': '3', 'name': 'Sales Order'},
-    {'id': '4', 'name': 'Sales Enquiry'},
+    {
+      'id': '1',
+      'name': 'Sales Invoice',
+      'permission': AppPermissions.can_search_sales_invoice
+    },
+    {
+      'id': '2',
+      'name': 'Sales Quotation',
+      'permission': AppPermissions.can_search_sales_quotation
+    },
+    {
+      'id': '3',
+      'name': 'Sales Order',
+      'permission': AppPermissions.can_search_sales_order
+    },
+    {
+      'id': '4',
+      'name': 'Sales Enquiry',
+      'permission': AppPermissions.can_search_sales_enquiry
+    },
   ];
 
   int _selectedIndex = 0;
@@ -135,39 +153,42 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: quickLinks.map((link) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: GestureDetector(
-                          onTap: () => {_onQuickLinkTapped(link['id'])},
-                          child: Container(
-                              alignment: Alignment.center,
-                              height: 40,
-                              width: 133,
-                              decoration: BoxDecoration(
-                                  gradient: link['id'] == '1'
-                                      ? mlcoGradient2
-                                      : inactivelinksgradient,
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(24))),
-                              child: Container(
+                    return PermissionAwareWidget(
+                      permissionId: link['permission'],
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: GestureDetector(
+                            onTap: () => {_onQuickLinkTapped(link['id'])},
+                            child: Container(
                                 alignment: Alignment.center,
-                                height: 30,
-                                width: 123,
+                                height: 40,
+                                width: 133,
                                 decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    gradient: link['id'] == '1'
+                                        ? mlcoGradient2
+                                        : inactivelinksgradient,
                                     borderRadius:
                                         BorderRadius.all(Radius.circular(24))),
-                                child: Text(
-                                  link['name'],
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: FontWeight.w600,
-                                    color: link['id'] == '1'
-                                        ? Colors.black
-                                        : Colors.black,
-                                    fontSize: 14,
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  height: 30,
+                                  width: 123,
+                                  decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.all(
+                                          Radius.circular(24))),
+                                  child: Text(
+                                    link['name'],
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w600,
+                                      color: link['id'] == '1'
+                                          ? Colors.black
+                                          : Colors.black,
+                                      fontSize: 14,
+                                    ),
                                   ),
-                                ),
-                              ))),
+                                ))),
+                      ),
                     );
                   }).toList(),
                 ),

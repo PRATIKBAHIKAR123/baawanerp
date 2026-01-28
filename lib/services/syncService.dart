@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:mlco/services/sessionCheckService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mlco/config/api_config.dart';
 
 final String url = 'https://demoapi.mlco.in/api/Auth/Login';
 
@@ -16,7 +17,7 @@ Future<http.Response> ledgerSyncService() async {
     "lastModifiedDate": null,
     "sessionId": currentSessionId
   };
-  var url = 'https://api.baawanerp.com/api/Ledger/Sync';
+  var url = '${ApiConfig.baseUrl}/api/Ledger/Sync';
   var client = http.Client();
   var response;
 
@@ -50,7 +51,7 @@ Future<http.Response> groupSyncService() async {
     "lastModifiedDate": null,
     "sessionId": currentSessionId
   };
-  var url = 'https://api.baawanerp.com/api/Group/Sync';
+  var url = '${ApiConfig.baseUrl}/api/Group/Sync';
   var client = http.Client();
   var response;
 
@@ -103,7 +104,7 @@ Future<http.Response> itemSyncService() async {
     "lastModifiedDate": null,
     "sessionId": currentSessionId
   };
-  var url = 'https://api.baawanerp.com/api/Item/Sync';
+  var url = '${ApiConfig.baseUrl}/api/Item/Sync';
   var client = http.Client();
   var response;
 
@@ -175,7 +176,7 @@ Future<http.Response> currencySyncService() async {
     "lastModifiedDate": null,
     "sessionId": currentSessionId
   };
-  var url = 'https://api.baawanerp.com/api/Currency/Sync';
+  var url = '${ApiConfig.baseUrl}/api/Currency/Sync';
   var client = http.Client();
   var response;
 

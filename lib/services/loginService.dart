@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mlco/config/api_config.dart';
 
-final String apiUrl = 'https://api.baawanerp.com/api/Auth/Login';
+final String apiUrl = '${ApiConfig.baseUrl}/api/Auth/Login';
 
 Future<http.Response> loginService(Map<String, dynamic> jsonBody) async {
   var url =
-      'https://api.baawanerp.com/api/Auth/Login'; // Replace with your actual login API URL
+      '${ApiConfig.baseUrl}/api/Auth/Login'; // Replace with your actual login API URL
   var client = http.Client();
   var response;
 
@@ -32,7 +33,7 @@ Future<http.Response> loginService(Map<String, dynamic> jsonBody) async {
 
 Future<http.Response> dealerLoginService(Map<String, dynamic> jsonBody) async {
   var url =
-      'https://api.baawanerp.com/api/Auth/Dealer/Login'; // Replace with your actual login API URL
+      '${ApiConfig.baseUrl}/api/Auth/Dealer/Login'; // Replace with your actual login API URL
   var client = http.Client();
   var response;
 

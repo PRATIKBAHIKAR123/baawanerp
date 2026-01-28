@@ -20,6 +20,9 @@ import 'package:mlco/screens/sales/createForm.dart';
 import 'package:mlco/services/apiServices.dart';
 import 'package:mlco/services/sessionCheckService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mlco/widgets/permission_aware_widget.dart';
+import 'package:mlco/config/app_permissions.dart';
+import 'package:mlco/services/permission_manager.dart';
 
 class SalesQuotationScreen extends StatefulWidget {
   @override
@@ -240,74 +243,77 @@ class _SalesQuotationScreenState extends State<SalesQuotationScreen> {
                   'Sales Quotation',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                Container(
-                  padding: EdgeInsets.all(10),
-                  height: 40,
-                  width: 100,
-                  decoration: BoxDecoration(
-                      gradient: mlcoGradient,
-                      boxShadow: [],
-                      borderRadius: BorderRadius.circular(6.0)),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        //fixedSize: Size(95, 20),
-                        backgroundColor: Colors.transparent,
-                        elevation: 0),
-                    onPressed: () {
-                      showGeneralDialog(
-                        context: context,
-                        barrierDismissible: true,
-                        barrierColor: Colors.transparent, // No backdrop
-                        barrierLabel: 'Popup', // Adding barrierLabel
-                        transitionDuration: Duration(milliseconds: 200),
-                        pageBuilder: (BuildContext context,
-                            Animation<double> animation,
-                            Animation<double> secondaryAnimation) {
-                          return Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Material(
-                              type: MaterialType.transparency,
-                              child: Container(
-                                width: MediaQuery.of(context).size.width,
-                                child: FilterPopup(
-                                  onSubmit: updateDates,
-                                  initialFromDate: fromDate,
-                                  initialToDate: toDate,
+                PermissionAwareWidget(
+                  permissionId: AppPermissions.can_utility_sales_quotation,
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    height: 40,
+                    width: 100,
+                    decoration: BoxDecoration(
+                        gradient: mlcoGradient,
+                        boxShadow: [],
+                        borderRadius: BorderRadius.circular(6.0)),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          //fixedSize: Size(95, 20),
+                          backgroundColor: Colors.transparent,
+                          elevation: 0),
+                      onPressed: () {
+                        showGeneralDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          barrierColor: Colors.transparent, // No backdrop
+                          barrierLabel: 'Popup', // Adding barrierLabel
+                          transitionDuration: Duration(milliseconds: 200),
+                          pageBuilder: (BuildContext context,
+                              Animation<double> animation,
+                              Animation<double> secondaryAnimation) {
+                            return Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Material(
+                                type: MaterialType.transparency,
+                                child: Container(
+                                  width: MediaQuery.of(context).size.width,
+                                  child: FilterPopup(
+                                    onSubmit: updateDates,
+                                    initialFromDate: fromDate,
+                                    initialToDate: toDate,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                        transitionBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                          return SlideTransition(
-                            position: Tween<Offset>(
-                              begin: Offset(0, 1),
-                              end: Offset(0, 0),
-                            ).animate(animation),
-                            child: child,
-                          );
-                        },
-                      );
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Filter',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        SizedBox(
-                          width: 2,
-                        ),
-                        Image.asset(
-                          'assets/icons/filter.png',
-                          width: 20,
-                          height: 20,
-                          color: Colors.white,
-                        )
-                      ],
+                            );
+                          },
+                          transitionBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: Offset(0, 1),
+                                end: Offset(0, 0),
+                              ).animate(animation),
+                              child: child,
+                            );
+                          },
+                        );
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Filter',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          SizedBox(
+                            width: 2,
+                          ),
+                          Image.asset(
+                            'assets/icons/filter.png',
+                            width: 20,
+                            height: 20,
+                            color: Colors.white,
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 )
@@ -362,21 +368,31 @@ class _SalesQuotationScreenState extends State<SalesQuotationScreen> {
                                         invoice['grandTotal']),
                                     style: mlco_gradient_text2,
                                   ),
-                                  GestureDetector(
-                                    onTapDown: (TapDownDetails details) {
-                                      showCustomPopupMenu(
-                                          context: context,
-                                          position: details.globalPosition,
-                                          invoice: invoice,
-                                          id: invoice['invCode'].toString(),
-                                          invType: 4,
-                                          invoiceType:
-                                              InvoiceType.salesQuotation);
-                                    },
-                                    child: Image.asset(
-                                      'assets/icons/Menubab.png',
-                                      height: 24,
-                                      width: 24,
+                                  PermissionAwareWidget(
+                                    anyOf: [
+                                      AppPermissions.can_view_sales_quotation,
+                                      AppPermissions.can_utility_sales_quotation
+                                    ],
+                                    child: GestureDetector(
+                                      onTapDown: (TapDownDetails details) {
+                                        showCustomPopupMenu(
+                                            context: context,
+                                            position: details.globalPosition,
+                                            invoice: invoice,
+                                            id: invoice['invCode'].toString(),
+                                            invType: 4,
+                                            invoiceType:
+                                                InvoiceType.salesQuotation,
+                                            permissionId: AppPermissions
+                                                .can_view_sales_quotation,
+                                            utilityPermissionId: AppPermissions
+                                                .can_utility_sales_quotation);
+                                      },
+                                      child: Image.asset(
+                                        'assets/icons/Menubab.png',
+                                        height: 24,
+                                        width: 24,
+                                      ),
                                     ),
                                   ),
                                 ]),
@@ -398,32 +414,35 @@ class _SalesQuotationScreenState extends State<SalesQuotationScreen> {
                 ),
         ],
       ),
-      floatingActionButton: Container(
-          decoration: BoxDecoration(
-              gradient: mlcoGradient,
-              boxShadow: [],
-              borderRadius:
-                  BorderRadiusDirectional.all(Radius.elliptical(10, 10))),
-          child: FloatingActionButton(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => CreateQuotationScreen()),
-              );
-            },
-            child: Text(
-              'Create',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                fontSize: 14,
+      floatingActionButton: PermissionAwareWidget(
+        permissionId: AppPermissions.can_create_sales_quotation,
+        child: Container(
+            decoration: BoxDecoration(
+                gradient: mlcoGradient,
+                boxShadow: [],
+                borderRadius:
+                    BorderRadiusDirectional.all(Radius.elliptical(10, 10))),
+            child: FloatingActionButton(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => CreateQuotationScreen()),
+                );
+              },
+              child: Text(
+                'Create',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
               ),
-            ),
-          )),
+            )),
+      ),
       bottomNavigationBar: Stack(
         alignment: Alignment.bottomCenter,
         children: <Widget>[

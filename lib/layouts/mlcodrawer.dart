@@ -33,6 +33,9 @@ import 'package:mlco/screens/sales/salesReturn.dart';
 import 'package:mlco/screens/vaoucher/creditnotevoucher.dart';
 import 'package:mlco/screens/vaoucher/voucher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mlco/services/permission_manager.dart';
+import 'package:mlco/config/app_permissions.dart';
+import 'package:mlco/widgets/permission_aware_widget.dart';
 
 class CustomDrawer extends StatefulWidget {
   CustomDrawer({super.key});
@@ -94,6 +97,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   logOut(context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    await PermissionManager().clear();
     prefs.remove('userData');
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -153,632 +157,851 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     );
                   },
                 ),
-                // createDrawerItem(
-                //   icon: 'assets/icons/invoice.png',
-                //   text: 'Invoice',
-                //   onTap: () {},
-                // ),
-                createExpandableDrawerItem(
-                  panelValue: 1,
-                  icon: 'assets/icons/sales.png',
-                  text: 'Masters',
-                  children: [
-                    createSubmenuItem(
-                        text: 'Ledgers',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => LedgersListScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/file-invoice.png'),
-                    createSubmenuItem(
-                        text: 'Items',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ItemsListScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/file-invoice.png'),
-                  ],
+                Visibility(
+                  visible: PermissionManager().hasAny([
+                    AppPermissions.can_view_ledgers,
+                    AppPermissions.can_view_items,
+                  ]),
+                  child: createExpandableDrawerItem(
+                    panelValue: 1,
+                    icon: 'assets/icons/sales.png',
+                    text: 'Masters',
+                    children: [
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_ledgers,
+                        child: createSubmenuItem(
+                            text: 'Ledgers',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => LedgersListScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/file-invoice.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_items,
+                        child: createSubmenuItem(
+                            text: 'Items',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ItemsListScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/file-invoice.png'),
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(
-                  height: 5,
+                SizedBox(height: 5),
+                Visibility(
+                  visible: PermissionManager().hasAny([
+                    AppPermissions.can_search_sales_invoice,
+                    AppPermissions.can_search_sales_return,
+                    AppPermissions.can_search_sales_quotation,
+                    AppPermissions.can_search_sales_order,
+                    AppPermissions.can_search_msg_proforma_invoice,
+                    AppPermissions.can_search_dispatch_note,
+                    AppPermissions.can_search_sales_enquiry,
+                    AppPermissions.can_search_dispatch_note_return,
+                    AppPermissions.can_search_cancel_document,
+                  ]),
+                  child: createExpandableDrawerItem(
+                    panelValue: 1,
+                    icon: 'assets/icons/sales.png',
+                    text: 'Sales',
+                    children: [
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_sales_invoice,
+                        child: createSubmenuItem(
+                            text: 'Sales Invoice',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => SalesInvoiceScreen(
+                                          invoiceType: InvoiceType.salesInvoice,
+                                        )),
+                              );
+                            },
+                            icon: 'assets/icons/file-invoice.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_sales_return,
+                        child: createSubmenuItem(
+                            text: 'Sales Return',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => SalesReturnScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/sales return.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_sales_quotation,
+                        child: createSubmenuItem(
+                            text: 'Sales Quotation',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        SalesQuotationScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/sales quotation.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_sales_order,
+                        child: createSubmenuItem(
+                            text: 'Sales Order',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => SalesOrderScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/sales order (1).png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId:
+                            AppPermissions.can_search_msg_proforma_invoice,
+                        child: createSubmenuItem(
+                            text: 'Proforma Invoice',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ProformaInvoiceScreen(
+                                          invoiceType:
+                                              InvoiceType.performaInvoice,
+                                        )),
+                              );
+                            },
+                            icon: 'assets/icons/Proforma Invoice.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_dispatch_note,
+                        child: createSubmenuItem(
+                            text: 'Dispatch Note',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ProformaInvoiceScreen(
+                                          invoiceType: InvoiceType.salesChalan,
+                                        )),
+                              );
+                            },
+                            icon: 'assets/icons/dispatch note.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_sales_enquiry,
+                        child: createSubmenuItem(
+                            text: 'Sales Enquiry',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => SalesEnquiryScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/sales enquiry.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId:
+                            AppPermissions.can_search_dispatch_note_return,
+                        child: createSubmenuItem(
+                            text: 'Dispatch Note Return',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ProformaInvoiceScreen(
+                                          invoiceType:
+                                              InvoiceType.salesChallanReturn,
+                                        )),
+                              );
+                            },
+                            icon: 'assets/icons/dispatch note return.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_cancel_document,
+                        child: createSubmenuItem(
+                            text: 'Cancel Document',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ProformaInvoiceScreen(
+                                          invoiceType:
+                                              InvoiceType.cancelDocument,
+                                        )),
+                              );
+                            },
+                            icon: 'assets/icons/cancel document.png'),
+                      ),
+                    ],
+                  ),
                 ),
-                createExpandableDrawerItem(
-                  panelValue: 1,
-                  icon: 'assets/icons/sales.png',
-                  text: 'Sales',
-                  children: [
-                    createSubmenuItem(
-                        text: 'Sales Invoice',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => SalesInvoiceScreen(
-                                      invoiceType: InvoiceType.salesInvoice,
-                                    )),
-                          );
-                        },
-                        icon: 'assets/icons/file-invoice.png'),
-                    createSubmenuItem(
-                        text: 'Sales Return',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => SalesReturnScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/sales return.png'),
-                    createSubmenuItem(
-                        text: 'Sales Quotation',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => SalesQuotationScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/sales quotation.png'),
-                    createSubmenuItem(
-                        text: 'Sales Order',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => SalesOrderScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/sales order (1).png'),
-                    createSubmenuItem(
-                        text: 'Proforma Invoice',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ProformaInvoiceScreen(
-                                      invoiceType: InvoiceType.performaInvoice,
-                                    )),
-                          );
-                        },
-                        icon: 'assets/icons/Proforma Invoice.png'),
-                    createSubmenuItem(
-                        text: 'Dispatch Note',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ProformaInvoiceScreen(
-                                      invoiceType: InvoiceType.salesChalan,
-                                    )),
-                          );
-                        },
-                        icon: 'assets/icons/dispatch note.png'),
-                    createSubmenuItem(
-                        text: 'Sales Enquiry',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => SalesEnquiryScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/sales enquiry.png'),
-                    createSubmenuItem(
-                        text: 'Dispatch Note Return',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ProformaInvoiceScreen(
-                                      invoiceType:
-                                          InvoiceType.salesChallanReturn,
-                                    )),
-                          );
-                        },
-                        icon: 'assets/icons/dispatch note return.png'),
-                    createSubmenuItem(
-                        text: 'Cancel Document',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ProformaInvoiceScreen(
-                                      invoiceType: InvoiceType.cancelDocument,
-                                    )),
-                          );
-                        },
-                        icon: 'assets/icons/cancel document.png'),
-                  ],
+                SizedBox(height: 5),
+                Visibility(
+                  visible: PermissionManager().hasAny([
+                    AppPermissions.can_search_purchase_order,
+                    AppPermissions.can_search_goods_receipt,
+                    AppPermissions.can_search_purchase_invoice,
+                    AppPermissions.can_search_purchase_return,
+                    AppPermissions.can_search_costing,
+                    AppPermissions.can_search_purchase_challan_return,
+                  ]),
+                  child: createExpandableDrawerItem(
+                    panelValue: 2,
+                    icon: 'assets/icons/purchase.png',
+                    text: 'Purchase',
+                    children: [
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_purchase_order,
+                        child: createSubmenuItem(
+                          text: 'Purchase Order',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType: InvoiceType.purchaseOrder,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/purchase order.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_goods_receipt,
+                        child: createSubmenuItem(
+                          text: 'Goods Receipt',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType:
+                                            InvoiceType.purchaseChallan,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/goods receipt.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId:
+                            AppPermissions.can_search_purchase_invoice,
+                        child: createSubmenuItem(
+                          text: 'Purchase Invoice',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType:
+                                            InvoiceType.purchaseInvoice,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/purchase invoice.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_purchase_return,
+                        child: createSubmenuItem(
+                          text: 'Purchase Return',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType: InvoiceType.purchaseReturn,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/purchase return.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_search_costing,
+                        child: createSubmenuItem(
+                          text: 'Costing',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType: InvoiceType.costing,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/costing.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId:
+                            AppPermissions.can_search_purchase_challan_return,
+                        child: createSubmenuItem(
+                          text: 'Goods Receipt Return',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType:
+                                            InvoiceType.purchaseChallanReturn,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/goods receipt return.png',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(
-                  height: 5,
+                SizedBox(height: 5),
+                Visibility(
+                  visible: PermissionManager().hasAny([
+                    AppPermissions.can_view_open_stock,
+                    AppPermissions.can_view_stock_in,
+                    AppPermissions.can_view_stock_out,
+                    AppPermissions.can_view_material_req_slip,
+                    AppPermissions.can_view_material_in,
+                    AppPermissions.can_view_material_out,
+                    AppPermissions.can_view_stock_adjustment,
+                  ]),
+                  child: createExpandableDrawerItem(
+                    panelValue: 3,
+                    icon: 'assets/icons/stock.png',
+                    text: 'Stock',
+                    children: [
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_open_stock,
+                        child: createSubmenuItem(
+                          text: 'Open Stock Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType: InvoiceType.openingStock,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/stock.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_stock_in,
+                        child: createSubmenuItem(
+                          text: 'Stock In Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType:
+                                            InvoiceType.transferedInStock,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/stock in.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_stock_out,
+                        child: createSubmenuItem(
+                          text: 'Stock Out Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType:
+                                            InvoiceType.transferedOutStock,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/stock out.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_material_req_slip,
+                        child: createSubmenuItem(
+                          text: 'Material Request Slip',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType: InvoiceType.materialSlip,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/material req slip.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_material_in,
+                        child: createSubmenuItem(
+                          text: 'Material In',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType: InvoiceType.materialIn,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/Material in.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_material_out,
+                        child: createSubmenuItem(
+                          text: 'Material Out',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType: InvoiceType.materialOut,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/material out.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_stock_adjustment,
+                        child: createSubmenuItem(
+                          text: 'Stock Adjustment',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ProformaInvoiceScreen(
+                                        invoiceType:
+                                            InvoiceType.stockAdjustment,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/stock adjustment.png',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                createExpandableDrawerItem(
-                  panelValue: 2,
-                  icon: 'assets/icons/purchase.png',
-                  text: 'Purchase',
-                  children: [
-                    createSubmenuItem(
-                      text: 'Purchase Order',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.purchaseOrder,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/purchase order.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Goods Receipt',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.purchaseChallan,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/goods receipt.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Purchase Invoice',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.purchaseInvoice,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/purchase invoice.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Purchase Return',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.purchaseReturn,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/purchase return.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Costing',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.costing,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/costing.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Goods Receipt Return',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType:
-                                        InvoiceType.purchaseChallanReturn,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/goods receipt return.png',
-                    ),
-                  ],
+                SizedBox(height: 5),
+                Visibility(
+                  visible: PermissionManager().hasAny([
+                    AppPermissions.can_view_sales_voucher,
+                    AppPermissions.can_view_credit_note,
+                    AppPermissions.can_view_purchase_voucher,
+                    AppPermissions.can_view_debit_note,
+                    AppPermissions.can_view_payment_voucher,
+                    AppPermissions.can_view_receipt_voucher,
+                    AppPermissions.can_view_journal_voucher,
+                    AppPermissions.can_view_contra_voucher,
+                  ]),
+                  child: createExpandableDrawerItem(
+                    panelValue: 4,
+                    icon: 'assets/icons/accounts.png',
+                    text: 'Accounts',
+                    children: [
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_sales_voucher,
+                        child: createSubmenuItem(
+                          text: 'Sales Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => VoucherScreen(
+                                        voucherType: VoucherType.salesVoucher,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/credit note vocuher.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_credit_note,
+                        child: createSubmenuItem(
+                          text: 'Credit Note Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => CreditNoteVoucherScreen(
+                                        voucherType:
+                                            VoucherType.creditNoteVoucher,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/credit note vocuher.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_purchase_voucher,
+                        child: createSubmenuItem(
+                          text: 'Purchase Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => VoucherScreen(
+                                        voucherType:
+                                            VoucherType.purchaseVoucher,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/purchase voucher.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_debit_note,
+                        child: createSubmenuItem(
+                          text: 'Debit Note Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => VoucherScreen(
+                                        voucherType:
+                                            VoucherType.debitNoteVoucher,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/debit note voucher.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_payment_voucher,
+                        child: createSubmenuItem(
+                          text: 'Payment Voucher',
+                          icon: 'assets/icons/payment voucher.png',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => VoucherScreen(
+                                        voucherType: VoucherType.paymentVoucher,
+                                      )),
+                            );
+                          },
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_receipt_voucher,
+                        child: createSubmenuItem(
+                          text: 'Receipt Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => VoucherScreen(
+                                        voucherType: VoucherType.receiptVoucher,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/receipt voucher.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_journal_voucher,
+                        child: createSubmenuItem(
+                          text: 'Journal Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => VoucherScreen(
+                                        voucherType: VoucherType.journalVoucher,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/journal voucher.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_contra_voucher,
+                        child: createSubmenuItem(
+                          text: 'Contra Voucher',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => VoucherScreen(
+                                        voucherType: VoucherType.contraVoucher,
+                                      )),
+                            );
+                          },
+                          icon: 'assets/icons/contra.png',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(
-                  height: 5,
-                ),
-
-                createExpandableDrawerItem(
-                  panelValue: 3,
-                  icon: 'assets/icons/stock.png',
-                  text: 'Stock',
-                  children: [
-                    createSubmenuItem(
-                      text: 'Open Stock Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.openingStock,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/stock.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Stock In Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.transferedInStock,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/stock in.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Stock Out Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.transferedOutStock,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/stock out.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Material Request Slip',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.materialSlip,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/material req slip.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Material In',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.materialIn,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/Material in.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Material Out',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.materialOut,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/material out.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Stock Adjustment',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProformaInvoiceScreen(
-                                    invoiceType: InvoiceType.stockAdjustment,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/stock adjustment.png',
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-
-                createExpandableDrawerItem(
-                  panelValue: 4,
-                  icon: 'assets/icons/accounts.png',
-                  text: 'Accounts',
-                  children: [
-                    createSubmenuItem(
-                      text: 'Sales Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => VoucherScreen(
-                                    voucherType: VoucherType.salesVoucher,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/credit note vocuher.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Credit Note Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => CreditNoteVoucherScreen(
-                                    voucherType: VoucherType.creditNoteVoucher,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/credit note vocuher.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Purchase Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => VoucherScreen(
-                                    voucherType: VoucherType.purchaseVoucher,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/purchase voucher.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Debit Note Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => VoucherScreen(
-                                    voucherType: VoucherType.debitNoteVoucher,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/debit note voucher.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Payment Voucher',
-                      icon: 'assets/icons/payment voucher.png',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => VoucherScreen(
-                                    voucherType: VoucherType.paymentVoucher,
-                                  )),
-                        );
-                      },
-                    ),
-                    createSubmenuItem(
-                      text: 'Receipt Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => VoucherScreen(
-                                    voucherType: VoucherType.receiptVoucher,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/receipt voucher.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Journal Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => VoucherScreen(
-                                    voucherType: VoucherType.journalVoucher,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/journal voucher.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Contra Voucher',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => VoucherScreen(
-                                    voucherType: VoucherType.contraVoucher,
-                                  )),
-                        );
-                      },
-                      icon: 'assets/icons/contra.png',
-                    ),
-                  ],
-                ),
-
-                SizedBox(
-                  height: 5,
-                ),
-                createExpandableDrawerItem(
-                  panelValue: 5,
-                  icon: 'assets/icons/reports.png',
-                  text: 'Reports',
-                  children: [
-                    createSubmenuItem(
-                      text: 'Current Stock',
-                      icon: 'assets/icons/current stock.png',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  CurrentStockReportListScreen()),
-                        );
-                      },
-                    ),
-                    createSubmenuItem(
-                      icon: 'assets/icons/ledger outstadning.png',
-                      text: 'Ledger Outstanding',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  OutstandingReportListScreen()),
-                        );
-                      },
-                    ),
-                    createSubmenuItem(
-                      icon: 'assets/icons/ledger child outstandig.png',
-                      text: 'Ledger Child Outstanding',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  LedgerChildOutstandingReportScreen()),
-                        );
-                      },
-                    ),
-                    createSubmenuItem(
-                      icon: 'assets/icons/ledger register.png',
-                      text: 'Ledger Register',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  LedgerRegisterReportScreen()),
-                        );
-                      },
-                    ),
-                    createSubmenuItem(
-                      text: 'Item Register',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ItemRegisterReportScreen()),
-                        );
-                      },
-                      icon: 'assets/icons/ledger register.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Sales Person',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => SalesPersonReportScreen()),
-                        );
-                      },
-                      icon: 'assets/icons/sales person.png',
-                    ),
-                    createSubmenuItem(
-                      text: 'Stock Valuation',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  StockValuationReportListScreen()),
-                        );
-                      },
-                      icon: 'assets/icons/stock valuation.png',
-                    ),
-                    createSubmenuItem(
-                        text: 'Ledger Target',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    LedgerTargetReportScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/stock valuation.png'),
-                    createSubmenuItem(
-                        text: 'Group Summary',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    GroupSummaryReportScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/stock valuation.png'),
-                    createSubmenuItem(
-                        text: 'Dealer Analysis',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    DealerAnalysisReportScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/stock valuation.png'),
-                    createSubmenuItem(
-                        text: 'Trial Balance',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => TrialBalReportScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/stock valuation.png'),
-                    createSubmenuItem(
-                        text: 'Profit And Loss',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ProfitLossReportScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/stock valuation.png'),
-                    createSubmenuItem(
-                        text: 'Balance Sheet',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => BalSheetReportScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/stock valuation.png'),
-                    createSubmenuItem(
-                        text: 'Item Batch Register',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    ItemBatchRegisterReportScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/stock valuation.png'),
-                    createSubmenuItem(
-                        text: 'Batch Summary',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    BatchStockSummaryReportScreen()),
-                          );
-                        },
-                        icon: 'assets/icons/stock valuation.png'),
-                  ],
+                SizedBox(height: 5),
+                Visibility(
+                  visible: PermissionManager().hasAny([
+                    AppPermissions.can_view_current_stock,
+                    AppPermissions.can_view_ledger_outstanding,
+                    AppPermissions.can_view_ledger_child_outstanding,
+                    AppPermissions.can_view_ledger_register,
+                    AppPermissions.can_view_item_register,
+                    AppPermissions.can_view_trial_balance,
+                    AppPermissions.can_view_balance_sheet,
+                    AppPermissions.can_view_pnl,
+                    AppPermissions.can_view_stock_valuation,
+                    AppPermissions.can_view_sales_margin,
+                    AppPermissions.can_view_so_summary,
+                    AppPermissions.can_view_batch_stock_summary,
+                    AppPermissions.can_view_item_batch_register,
+                    AppPermissions.can_view_process_order,
+                    AppPermissions.can_view_schedule_report,
+                    AppPermissions.can_view_sales_register,
+                    AppPermissions.can_view_purchase_register,
+                  ]),
+                  child: createExpandableDrawerItem(
+                    panelValue: 5,
+                    icon: 'assets/icons/reports.png',
+                    text: 'Reports',
+                    children: [
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_current_stock,
+                        child: createSubmenuItem(
+                          text: 'Current Stock',
+                          icon: 'assets/icons/current stock.png',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      CurrentStockReportListScreen()),
+                            );
+                          },
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId:
+                            AppPermissions.can_view_ledger_outstanding,
+                        child: createSubmenuItem(
+                          icon: 'assets/icons/ledger outstadning.png',
+                          text: 'Ledger Outstanding',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      OutstandingReportListScreen()),
+                            );
+                          },
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId:
+                            AppPermissions.can_view_ledger_child_outstanding,
+                        child: createSubmenuItem(
+                          icon: 'assets/icons/ledger child outstandig.png',
+                          text: 'Ledger Child Outstanding',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      LedgerChildOutstandingReportScreen()),
+                            );
+                          },
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_ledger_register,
+                        child: createSubmenuItem(
+                          icon: 'assets/icons/ledger register.png',
+                          text: 'Ledger Register',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      LedgerRegisterReportScreen()),
+                            );
+                          },
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_item_register,
+                        child: createSubmenuItem(
+                          text: 'Item Register',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      ItemRegisterReportScreen()),
+                            );
+                          },
+                          icon: 'assets/icons/ledger register.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_sales_person,
+                        child: createSubmenuItem(
+                          text: 'Sales Person',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      SalesPersonReportScreen()),
+                            );
+                          },
+                          icon: 'assets/icons/sales person.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_stock_valuation,
+                        child: createSubmenuItem(
+                          text: 'Stock Valuation',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      StockValuationReportListScreen()),
+                            );
+                          },
+                          icon: 'assets/icons/stock valuation.png',
+                        ),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_ledger_target,
+                        child: createSubmenuItem(
+                            text: 'Ledger Target',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        LedgerTargetReportScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/stock valuation.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_group_summary,
+                        child: createSubmenuItem(
+                            text: 'Group Summary',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        GroupSummaryReportScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/stock valuation.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_dealer_analysis,
+                        child: createSubmenuItem(
+                            text: 'Dealer Analysis',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        DealerAnalysisReportScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/stock valuation.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_trial_balance,
+                        child: createSubmenuItem(
+                            text: 'Trial Balance',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        TrialBalReportScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/stock valuation.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_pnl,
+                        child: createSubmenuItem(
+                            text: 'Profit And Loss',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        ProfitLossReportScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/stock valuation.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_balance_sheet,
+                        child: createSubmenuItem(
+                            text: 'Balance Sheet',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        BalSheetReportScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/stock valuation.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId:
+                            AppPermissions.can_view_item_batch_register,
+                        child: createSubmenuItem(
+                            text: 'Item Batch Register',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        ItemBatchRegisterReportScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/stock valuation.png'),
+                      ),
+                      PermissionAwareWidget(
+                        permissionId: AppPermissions.can_view_batch_summary,
+                        child: createSubmenuItem(
+                            text: 'Batch Summary',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        BatchStockSummaryReportScreen()),
+                              );
+                            },
+                            icon: 'assets/icons/stock valuation.png'),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -892,7 +1115,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   }) {
     return ExpansionPanelRadio(
       backgroundColor: const Color.fromRGBO(246, 246, 246, 1),
-      value: value!,
+      value: value,
       headerBuilder: (context, isExpanded) {
         return ListTile(
           shape: RoundedRectangleBorder(

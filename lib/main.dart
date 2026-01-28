@@ -11,6 +11,7 @@ import 'package:mlco/services/navigationservice.dart';
 import 'package:mlco/services/sessionCheckService.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mlco/services/permission_manager.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -104,6 +105,9 @@ class MyApp extends StatelessWidget {
 
   Future<Map<String, dynamic>> _initializeApp() async {
     bool isSessionValid = await checkSessionService();
+    // Initialize Permission Manager
+    await PermissionManager().init();
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool? isDealer = prefs.getBool('isDealer');
     print('isDealer: $isDealer');

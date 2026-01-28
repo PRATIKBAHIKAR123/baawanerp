@@ -15,6 +15,7 @@ import 'package:mlco/services/sessionIdFetch.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:mlco/config/api_config.dart';
 
 class EMailPopup extends StatefulWidget {
 // Define callback function
@@ -218,9 +219,8 @@ class _EMailPopupState extends State<EMailPopup> {
       // );
 
       // Replace with your API endpoint
-      var response = await Dio().post(
-          'https://api.baawanerp.com/api/Invoice/SendEmail',
-          data: formData);
+      var response = await Dio()
+          .post('${ApiConfig.baseUrl}/api/Invoice/SendEmail', data: formData);
 
       if (response.statusCode == 200) {
         // Handle successful response

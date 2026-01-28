@@ -17,6 +17,8 @@ import 'package:mlco/screens/masters/items/itemFIlter.dart';
 import 'package:mlco/services/itemService.dart';
 import 'package:mlco/services/ledgerService.dart';
 import 'package:mlco/services/sessionCheckService.dart';
+import 'package:mlco/config/app_permissions.dart';
+import 'package:mlco/widgets/permission_aware_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ItemsListScreen extends StatefulWidget {
@@ -222,120 +224,126 @@ class _ItemsListScreenState extends State<ItemsListScreen> {
                   'Items Listings',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                Container(
-                  padding: EdgeInsets.all(10),
-                  height: 40,
-                  width: 100,
-                  decoration: BoxDecoration(
-                      gradient: mlcoGradient,
-                      boxShadow: [],
-                      borderRadius: BorderRadius.circular(6.0)),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        //fixedSize: Size(95, 20),
-                        backgroundColor: Colors.transparent,
-                        elevation: 0),
-                    onPressed: () {
-                      showGeneralDialog(
-                        context: context,
-                        barrierDismissible: true,
-                        barrierColor: Colors.transparent, // No backdrop
-                        barrierLabel: 'Popup', // Adding barrierLabel
-                        transitionDuration: Duration(milliseconds: 200),
-                        pageBuilder: (BuildContext context,
-                            Animation<double> animation,
-                            Animation<double> secondaryAnimation) {
-                          return Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Material(
-                              type: MaterialType.transparency,
-                              child: Container(
-                                width: MediaQuery.of(context).size.width,
-                                child: ItemFilterPopup(
-                                  onSubmit: onFilter,
-                                  filterType: 'itemmaster',
-                                  initialValues: {
-                                    'itemCode': itemCode,
-                                    'brand': itemBrand,
-                                    'category': itemCat,
-                                    'subCategory': itemSubCat,
-                                    'type': itemType,
-                                    'brandCode': itemBrandCode,
-                                    'stockPlace': spid,
-                                  },
+                PermissionAwareWidget(
+                  permissionId: AppPermissions.can_utility_items,
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    height: 40,
+                    width: 100,
+                    decoration: BoxDecoration(
+                        gradient: mlcoGradient,
+                        boxShadow: [],
+                        borderRadius: BorderRadius.circular(6.0)),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          //fixedSize: Size(95, 20),
+                          backgroundColor: Colors.transparent,
+                          elevation: 0),
+                      onPressed: () {
+                        showGeneralDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          barrierColor: Colors.transparent, // No backdrop
+                          barrierLabel: 'Popup', // Adding barrierLabel
+                          transitionDuration: Duration(milliseconds: 200),
+                          pageBuilder: (BuildContext context,
+                              Animation<double> animation,
+                              Animation<double> secondaryAnimation) {
+                            return Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Material(
+                                type: MaterialType.transparency,
+                                child: Container(
+                                  width: MediaQuery.of(context).size.width,
+                                  child: ItemFilterPopup(
+                                    onSubmit: onFilter,
+                                    filterType: 'itemmaster',
+                                    initialValues: {
+                                      'itemCode': itemCode,
+                                      'brand': itemBrand,
+                                      'category': itemCat,
+                                      'subCategory': itemSubCat,
+                                      'type': itemType,
+                                      'brandCode': itemBrandCode,
+                                      'stockPlace': spid,
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                        transitionBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                          return SlideTransition(
-                            position: Tween<Offset>(
-                              begin: Offset(0, 1),
-                              end: Offset(0, 0),
-                            ).animate(animation),
-                            child: child,
-                          );
-                        },
-                      );
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Filter',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        SizedBox(
-                          width: 2,
-                        ),
-                        Image.asset(
-                          'assets/icons/filter.png',
-                          width: 20,
-                          height: 20,
-                          color: Colors.white,
-                        )
-                      ],
+                            );
+                          },
+                          transitionBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: Offset(0, 1),
+                                end: Offset(0, 0),
+                              ).animate(animation),
+                              child: child,
+                            );
+                          },
+                        );
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Filter',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          SizedBox(
+                            width: 2,
+                          ),
+                          Image.asset(
+                            'assets/icons/filter.png',
+                            width: 20,
+                            height: 20,
+                            color: Colors.white,
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                Container(
-                  padding: EdgeInsets.all(10),
-                  height: 40,
-                  width: 100,
-                  decoration: BoxDecoration(
-                      gradient: mlcoGradient,
-                      boxShadow: [],
-                      borderRadius: BorderRadius.circular(6.0)),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        //fixedSize: Size(95, 20),
-                        backgroundColor: Colors.transparent,
-                        elevation: 0),
-                    onPressed: () {},
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          child: Text(
-                            'Add Item',
-                            style: TextStyle(color: Colors.white),
+                PermissionAwareWidget(
+                  permissionId: AppPermissions.can_create_items,
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    height: 40,
+                    width: 100,
+                    decoration: BoxDecoration(
+                        gradient: mlcoGradient,
+                        boxShadow: [],
+                        borderRadius: BorderRadius.circular(6.0)),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          //fixedSize: Size(95, 20),
+                          backgroundColor: Colors.transparent,
+                          elevation: 0),
+                      onPressed: () {},
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          GestureDetector(
+                            child: Text(
+                              'Add Item',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return addItemPopup(
+                                    onSubmit: (String, Object) {},
+                                  );
+                                },
+                              );
+                            },
                           ),
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return addItemPopup(
-                                  onSubmit: (String, Object) {},
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 )

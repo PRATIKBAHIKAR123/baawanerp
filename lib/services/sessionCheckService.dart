@@ -7,6 +7,7 @@ import 'package:mlco/services/api_client.dart';
 import 'package:mlco/services/navigationservice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:mlco/config/api_config.dart';
 
 Future<bool> checkSessionService() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -31,7 +32,7 @@ Future<bool> checkSessionService() async {
     return false;
   }
 
-  var url = 'https://api.baawanerp.com/api/Auth/CheckSession';
+  var url = '${ApiConfig.baseUrl}/api/Auth/CheckSession';
   final client = ApiClient(currentSessionId);
   var response;
 

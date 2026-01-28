@@ -13,6 +13,8 @@ import 'package:mlco/screens/sales/salesOrder.dart';
 import 'package:mlco/screens/sales/salesProformaInvoice.dart';
 import 'package:mlco/screens/sales/salesQuatation.dart';
 import 'package:mlco/screens/sales/salesReturn.dart';
+import 'package:mlco/config/app_permissions.dart';
+import 'package:mlco/services/permission_manager.dart';
 
 class SalesDashboardScreen extends StatefulWidget {
   @override
@@ -27,56 +29,65 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
       'id': '1',
       'name': 'Sales Invoice',
       'icon': 'assets/icons/file-invoice.png',
-      'screen': SalesInvoiceScreen(invoiceType: InvoiceType.salesInvoice)
+      'screen': SalesInvoiceScreen(invoiceType: InvoiceType.salesInvoice),
+      'permission': AppPermissions.can_search_sales_invoice
     },
     {
       'id': '2',
       'name': 'Sales Quotation',
       'icon': 'assets/icons/sales quotation.png',
-      'screen': SalesQuotationScreen()
+      'screen': SalesQuotationScreen(),
+      'permission': AppPermissions.can_search_sales_quotation
     },
     {
       'id': '3',
       'name': 'Sales Order',
       'icon': 'assets/icons/sales order (1).png',
-      'screen': SalesOrderScreen()
+      'screen': SalesOrderScreen(),
+      'permission': AppPermissions.can_search_sales_order
     },
     {
       'id': '4',
       'name': 'Sales Enquiry',
       'icon': 'assets/icons/sales enquiry.png',
-      'screen': SalesEnquiryScreen()
+      'screen': SalesEnquiryScreen(),
+      'permission': AppPermissions.can_view_sales_enquiry
     },
     {
       'id': '5',
       'name': 'Sales Return',
       'icon': 'assets/icons/sales return.png',
-      'screen': SalesReturnScreen()
+      'screen': SalesReturnScreen(),
+      'permission': AppPermissions.can_view_sales_return
     },
     {
       'id': '6',
       'name': 'Proforma Invoice',
       'icon': 'assets/icons/Proforma Invoice.png',
-      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.performaInvoice)
+      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.performaInvoice),
+      'permission': AppPermissions.can_search_msg_proforma_invoice
     },
     {
       'id': '7',
       'name': 'Dispatch Note',
       'icon': 'assets/icons/dispatch note.png',
-      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.salesChalan)
+      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.salesChalan),
+      'permission': AppPermissions.can_search_dispatch_note
     },
     {
       'id': '8',
       'name': 'Dispatch Note Return',
       'icon': 'assets/icons/dispatch note return.png',
       'screen':
-          ProformaInvoiceScreen(invoiceType: InvoiceType.salesChallanReturn)
+          ProformaInvoiceScreen(invoiceType: InvoiceType.salesChallanReturn),
+      'permission': AppPermissions.can_search_dispatch_note_return
     },
     {
       'id': '9',
       'name': 'Cancel Document',
       'icon': 'assets/icons/cancel document.png',
-      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.cancelDocument)
+      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.cancelDocument),
+      'permission': AppPermissions.can_search_cancel_document
     },
   ];
 
@@ -155,37 +166,48 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
               SizedBox(height: 10),
               Container(
                 height: 500, // Set a fixed height
-                child: GridView.builder(
-                  padding: EdgeInsets.all(10),
-                  itemCount: quickLinks.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // Number of items per row
-                      mainAxisSpacing: 10.0, // Spacing between rows
-                      crossAxisSpacing: 10.0, // Spacing between columns
-                      childAspectRatio:
-                          1, // Adjust this ratio to control the height of grid items
-                      mainAxisExtent: 50),
-                  itemBuilder: (context, index) {
-                    final link = quickLinks[index];
-                    return GestureDetector(
-                      onTap: () => _onQuickLinkTapped(link),
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          gradient: link['id'] == activeLink
-                              ? mlcoGradient2
-                              : inactivelinksgradient,
-                          borderRadius: BorderRadius.all(Radius.circular(24)),
+                child: Builder(builder: (context) {
+                  final visibleLinks = quickLinks.where((link) {
+                    if (link['permission'] == null) return true;
+                    return PermissionManager().isGranted(link['permission']);
+                  }).toList();
+
+                  if (visibleLinks.isEmpty) {
+                    return Center(child: Text('No access to Quick Links'));
+                  }
+
+                  return GridView.builder(
+                    padding: EdgeInsets.all(10),
+                    itemCount: visibleLinks.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2, // Number of items per row
+                        mainAxisSpacing: 10.0, // Spacing between rows
+                        crossAxisSpacing: 10.0, // Spacing between columns
+                        childAspectRatio:
+                            1, // Adjust this ratio to control the height of grid items
+                        mainAxisExtent: 50),
+                    itemBuilder: (context, index) {
+                      final link = visibleLinks[index];
+                      return GestureDetector(
+                        onTap: () => _onQuickLinkTapped(link),
+                        child: Container(
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            gradient: link['id'] == activeLink
+                                ? mlcoGradient2
+                                : inactivelinksgradient,
+                            borderRadius: BorderRadius.all(Radius.circular(24)),
+                          ),
+                          child: createSubmenuItem(
+                            text: link['name'],
+                            onTap: () => _onQuickLinkTapped(link),
+                            icon: link['icon'],
+                          ),
                         ),
-                        child: createSubmenuItem(
-                          text: link['name'],
-                          onTap: () => _onQuickLinkTapped(link),
-                          icon: link['icon'],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  );
+                }),
               ),
             ],
           ),

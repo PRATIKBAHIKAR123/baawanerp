@@ -4,6 +4,8 @@ import 'package:mlco/common-widgets/invoice-dialog.dart';
 import 'package:mlco/common-widgets/invoiceview.dart';
 import 'package:mlco/common-widgets/whatsappshare-dialog.dart';
 import 'package:mlco/global/invoiceTypes.dart';
+import 'package:mlco/services/permission_manager.dart';
+import 'package:mlco/config/app_permissions.dart';
 
 Future<void> showCustomPopupMenu({
   required BuildContext context,
@@ -12,6 +14,8 @@ Future<void> showCustomPopupMenu({
   int? invType,
   Map<String, dynamic>? invoice,
   InvoiceType? invoiceType,
+  int? permissionId,
+  int? utilityPermissionId,
   //required Function(String) onSelected,
 }) async {
   final RenderBox overlay =
@@ -29,22 +33,28 @@ Future<void> showCustomPopupMenu({
       Offset.zero & overlay.size,
     ),
     items: [
-      PopupMenuItem<String>(
-        value: 'View',
-        child: Text('View'),
-      ),
-      PopupMenuItem<String>(
-        value: 'Print',
-        child: Text('Print'),
-      ),
-      PopupMenuItem<String>(
-        value: 'WhatsApp',
-        child: Text('WhatsApp'),
-      ),
-      PopupMenuItem<String>(
-        value: 'E-Mail',
-        child: Text('E-Mail'),
-      ),
+      if (permissionId == null ||
+          PermissionManager().isGranted(permissionId)) ...[
+        PopupMenuItem<String>(
+          value: 'View',
+          child: Text('View'),
+        ),
+      ],
+      if (utilityPermissionId == null ||
+          PermissionManager().isGranted(utilityPermissionId)) ...[
+        PopupMenuItem<String>(
+          value: 'Print',
+          child: Text('Print'),
+        ),
+        PopupMenuItem<String>(
+          value: 'WhatsApp',
+          child: Text('WhatsApp'),
+        ),
+        PopupMenuItem<String>(
+          value: 'E-Mail',
+          child: Text('E-Mail'),
+        ),
+      ],
     ],
     elevation: 8.0,
   ).then((value) {

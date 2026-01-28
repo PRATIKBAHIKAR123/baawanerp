@@ -13,6 +13,8 @@ import 'package:mlco/screens/sales/salesOrder.dart';
 import 'package:mlco/screens/sales/salesProformaInvoice.dart';
 import 'package:mlco/screens/sales/salesQuatation.dart';
 import 'package:mlco/screens/sales/salesReturn.dart';
+import 'package:mlco/config/app_permissions.dart';
+import 'package:mlco/services/permission_manager.dart';
 
 class PurchaseDashboardScreen extends StatefulWidget {
   @override
@@ -28,38 +30,44 @@ class _PurchaseDashboardScreenState extends State<PurchaseDashboardScreen> {
       'id': '1',
       'name': 'Purchase Order',
       'icon': 'assets/icons/purchase order.png',
-      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseOrder)
+      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseOrder),
+      'permission': AppPermissions.can_view_purchase_order
     },
     {
       'id': '2',
       'name': 'Goods Receipt',
       'icon': 'assets/icons/goods receipt.png',
-      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseChallan)
+      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseChallan),
+      'permission': AppPermissions.can_view_goods_receipt
     },
     {
       'id': '3',
       'name': 'Purchase Invoice',
       'icon': 'assets/icons/purchase invoice.png',
-      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseInvoice)
+      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseInvoice),
+      'permission': AppPermissions.can_view_purchase_invoice
     },
     {
       'id': '4',
       'name': 'Purchase Return',
       'icon': 'assets/icons/purchase return.png',
-      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseReturn)
+      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseReturn),
+      'permission': AppPermissions.can_view_purchase_return
     },
     {
       'id': '5',
       'name': 'Costing',
       'icon': 'assets/icons/costing.png',
-      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.costing)
+      'screen': ProformaInvoiceScreen(invoiceType: InvoiceType.costing),
+      'permission': AppPermissions.can_view_costing
     },
     {
       'id': '6',
       'name': 'Goods Receipt Return',
       'icon': 'assets/icons/goods receipt return.png',
       'screen':
-          ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseChallanReturn)
+          ProformaInvoiceScreen(invoiceType: InvoiceType.purchaseChallanReturn),
+      'permission': AppPermissions.can_view_purchase_challan_return
     },
   ];
 
@@ -138,37 +146,48 @@ class _PurchaseDashboardScreenState extends State<PurchaseDashboardScreen> {
               SizedBox(height: 10),
               Container(
                 height: 500, // Set a fixed height
-                child: GridView.builder(
-                  padding: EdgeInsets.all(10),
-                  itemCount: quickLinks.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // Number of items per row
-                      mainAxisSpacing: 10.0, // Spacing between rows
-                      crossAxisSpacing: 10.0, // Spacing between columns
-                      childAspectRatio:
-                          1, // Adjust this ratio to control the height of grid items
-                      mainAxisExtent: 50),
-                  itemBuilder: (context, index) {
-                    final link = quickLinks[index];
-                    return GestureDetector(
-                      onTap: () => _onQuickLinkTapped(link),
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          gradient: link['id'] == activeLink
-                              ? mlcoGradient2
-                              : inactivelinksgradient,
-                          borderRadius: BorderRadius.all(Radius.circular(24)),
+                child: Builder(builder: (context) {
+                  final visibleLinks = quickLinks.where((link) {
+                    if (link['permission'] == null) return true;
+                    return PermissionManager().isGranted(link['permission']);
+                  }).toList();
+
+                  if (visibleLinks.isEmpty) {
+                    return Center(child: Text('No access to Quick Links'));
+                  }
+
+                  return GridView.builder(
+                    padding: EdgeInsets.all(10),
+                    itemCount: visibleLinks.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2, // Number of items per row
+                        mainAxisSpacing: 10.0, // Spacing between rows
+                        crossAxisSpacing: 10.0, // Spacing between columns
+                        childAspectRatio:
+                            1, // Adjust this ratio to control the height of grid items
+                        mainAxisExtent: 50),
+                    itemBuilder: (context, index) {
+                      final link = visibleLinks[index];
+                      return GestureDetector(
+                        onTap: () => _onQuickLinkTapped(link),
+                        child: Container(
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            gradient: link['id'] == activeLink
+                                ? mlcoGradient2
+                                : inactivelinksgradient,
+                            borderRadius: BorderRadius.all(Radius.circular(24)),
+                          ),
+                          child: createSubmenuItem(
+                            text: link['name'],
+                            onTap: () => _onQuickLinkTapped(link),
+                            icon: link['icon'],
+                          ),
                         ),
-                        child: createSubmenuItem(
-                          text: link['name'],
-                          onTap: () => _onQuickLinkTapped(link),
-                          icon: link['icon'],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  );
+                }),
               ),
             ],
           ),

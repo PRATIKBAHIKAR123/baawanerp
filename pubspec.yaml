@@ -55,6 +55,7 @@ dependencies:
   dropdown_search: ^6.0.0
   dio: ^5.2.0
   pdf: ^3.10.7
+  device_info_plus: ^10.0.0
   
 dev_dependencies:
   flutter_test:

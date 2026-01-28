@@ -2,10 +2,11 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:mlco/services/sessionCheckService.dart';
+import 'package:mlco/config/api_config.dart';
 
 Future<http.Response> ledgerBalService(Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Ledger/LedgerBalance';
+  var url = '${ApiConfig.baseUrl}/api/Ledger/LedgerBalance';
   var client = http.Client();
   var response;
 
@@ -30,7 +31,7 @@ Future<http.Response> ledgerBalService(Map<String, dynamic> jsonBody) async {
 
 Future<http.Response> ledgerInfoService(Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Ledger/GetById';
+  var url = '${ApiConfig.baseUrl}/api/Ledger/GetById';
   var client = http.Client();
   var response;
 
@@ -55,7 +56,7 @@ Future<http.Response> ledgerInfoService(Map<String, dynamic> jsonBody) async {
 
 Future<http.Response> ledgerListService(Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Ledger/Search';
+  var url = '${ApiConfig.baseUrl}/api/Ledger/Search';
   var client = http.Client();
   var response;
 
@@ -80,7 +81,7 @@ Future<http.Response> ledgerListService(Map<String, dynamic> jsonBody) async {
 
 Future<http.Response> multiledgerService(Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Ledger/MultiLedgerInfo';
+  var url = '${ApiConfig.baseUrl}/api/Ledger/MultiLedgerInfo';
   var client = http.Client();
   var response;
 
@@ -105,7 +106,7 @@ Future<http.Response> multiledgerService(Map<String, dynamic> jsonBody) async {
 
 Future<http.Response> createledgerService(Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Ledger/Create';
+  var url = '${ApiConfig.baseUrl}/api/Ledger/Create';
   var client = http.Client();
   var response;
 
@@ -131,7 +132,7 @@ Future<http.Response> createledgerService(Map<String, dynamic> jsonBody) async {
 Future<http.Response> ledgerPriceCatListService(
     Map<String, dynamic> jsonBody) async {
   isValidSession();
-  var url = 'https://api.baawanerp.com/api/Ledger/PriceCategories';
+  var url = '${ApiConfig.baseUrl}/api/Ledger/PriceCategories';
   var client = http.Client();
   var response;
 

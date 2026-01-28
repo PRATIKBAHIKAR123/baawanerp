@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 import '../../common-widgets/pwaInstall.dart';
+import 'package:mlco/services/permission_manager.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -178,6 +179,20 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
         String? userId = decodedData['user']['user_ID']?.toString();
         await prefs.setBool('isDealer', false);
         if (decodedData != null) {
+          print('DEBUG: Data Keys: ${decodedData.keys.toList()}'); // Debug keys
+
+          if (decodedData['tokenInfo'] != null) {
+            print('DEBUG: Found tokenInfo, saving permissions...');
+            await PermissionManager().savePermissions(decodedData['tokenInfo']);
+          } else if (decodedData['rights'] != null) {
+            print(
+                'DEBUG: tokenInfo is missing but found root-level "rights". Saving root data as permissions source.');
+            await PermissionManager().savePermissions(decodedData);
+          } else {
+            print(
+                'DEBUG: CRITICAL - No "tokenInfo" OR "rights" found in login response!');
+          }
+
           userList(decodedData);
           ledgerSync();
           itemSync();

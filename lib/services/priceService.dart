@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:mlco/services/sessionCheckService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mlco/config/api_config.dart';
 
 final String url = 'https://demoapi.mlco.in/api/Auth/Login';
 
 Future<http.Response> priceListService(Map<String, dynamic> jsonBody) async {
   isValidSession();
 
-  var url = 'https://api.baawanerp.com/api/PriceList/Search';
+  var url = '${ApiConfig.baseUrl}/api/PriceList/Search';
   var client = http.Client();
   var response;
 
