@@ -21,6 +21,7 @@ import 'package:mlco/services/sessionCheckService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mlco/config/app_permissions.dart';
 import 'package:mlco/widgets/permission_aware_widget.dart';
+import 'package:mlco/screens/sales/createSalesChalan.dart';
 
 class ProformaInvoiceScreen extends StatefulWidget {
   final InvoiceType invoiceType;
@@ -423,6 +424,37 @@ class _ProformaInvoiceScreenState extends State<ProformaInvoiceScreen> {
                 ),
         ],
       ),
+      floatingActionButton: widget.invoiceType == InvoiceType.salesChalan
+          ? PermissionAwareWidget(
+              permissionId: AppPermissions.can_create_dispatch_note,
+              child: Container(
+                  decoration: BoxDecoration(
+                      gradient: mlcoGradient,
+                      boxShadow: [],
+                      borderRadius: BorderRadiusDirectional.all(
+                          Radius.elliptical(10, 10))),
+                  child: FloatingActionButton(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => CreateSalesChalanScreen()),
+                      );
+                    },
+                    child: Text(
+                      'Create',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  )),
+            )
+          : null,
       bottomNavigationBar: Stack(
         alignment: Alignment.bottomCenter,
         children: <Widget>[

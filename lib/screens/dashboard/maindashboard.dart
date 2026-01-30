@@ -22,6 +22,7 @@ import 'package:mlco/services/announcementService.dart';
 import 'package:mlco/services/sessionCheckService.dart';
 import 'package:mlco/config/app_permissions.dart';
 import 'package:mlco/widgets/permission_aware_widget.dart';
+import 'package:mlco/services/permission_manager.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   @override
@@ -143,56 +144,64 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
               Container(
                 child: SearchStat(),
               ),
-              SizedBox(height: 20),
-              Text(
-                'Quick Links',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
               SizedBox(height: 10),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: quickLinks.map((link) {
-                    return PermissionAwareWidget(
-                      permissionId: link['permission'],
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: GestureDetector(
-                            onTap: () => {_onQuickLinkTapped(link['id'])},
-                            child: Container(
-                                alignment: Alignment.center,
-                                height: 40,
-                                width: 133,
-                                decoration: BoxDecoration(
-                                    gradient: link['id'] == '1'
-                                        ? mlcoGradient2
-                                        : inactivelinksgradient,
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(24))),
-                                child: Container(
-                                  alignment: Alignment.center,
-                                  height: 30,
-                                  width: 123,
-                                  decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.all(
-                                          Radius.circular(24))),
-                                  child: Text(
-                                    link['name'],
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontWeight: FontWeight.w600,
-                                      color: link['id'] == '1'
-                                          ? Colors.black
-                                          : Colors.black,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ))),
+              if (quickLinks.any(
+                  (link) => PermissionManager().isGranted(link['permission'])))
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Quick Links',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 10),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: quickLinks.map((link) {
+                          return PermissionAwareWidget(
+                            permissionId: link['permission'],
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: GestureDetector(
+                                  onTap: () => {_onQuickLinkTapped(link['id'])},
+                                  child: Container(
+                                      alignment: Alignment.center,
+                                      height: 40,
+                                      width: 133,
+                                      decoration: BoxDecoration(
+                                          gradient: link['id'] == '1'
+                                              ? mlcoGradient2
+                                              : inactivelinksgradient,
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(24))),
+                                      child: Container(
+                                        alignment: Alignment.center,
+                                        height: 30,
+                                        width: 123,
+                                        decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.all(
+                                                Radius.circular(24))),
+                                        child: Text(
+                                          link['name'],
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontWeight: FontWeight.w600,
+                                            color: link['id'] == '1'
+                                                ? Colors.black
+                                                : Colors.black,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ))),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
-              ),
               SizedBox(height: 20),
               // Row(
               //   mainAxisAlignment: MainAxisAlignment.spaceBetween,

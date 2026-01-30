@@ -129,7 +129,11 @@ class _addItemPopupState extends State<addItemPopup> {
       if (response.statusCode == 200) {
         setState(() {
           for (var item in decodedData) {
-            columnTxt == "Brand" ? brandList.add(item['name']) : null;
+            if (columnTxt == "Brand") {
+              if (item['name'] != null && item['name'] != '') {
+                brandList.add(item['name']);
+              }
+            }
             columnTxt == "Category" ? categoryList.add(item['name']) : null;
             columnTxt == "Sizes" ? subCategoryList.add(item['name']) : null;
             columnTxt == "Type" ? typeList.add(item['name']) : null;
